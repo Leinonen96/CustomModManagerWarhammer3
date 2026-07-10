@@ -113,5 +113,13 @@ def save_preset(name):
         json.dump(data, f, indent=4)
     return jsonify({"status": "success", "message": f"Preset '{name}' saved successfully!"})
 
+@app.route('/api/preset/<name>', methods=['DELETE'])
+def delete_preset(name):
+    path = os.path.join(PRESET_DIR, f"{name}.json")
+    if os.path.exists(path):
+        os.remove(path)
+        return jsonify({"status": "success", "message": f"Preset '{name}' deleted successfully!"})
+    return jsonify({"status": "error", "message": "Preset not found!"}), 404
+
 if __name__ == '__main__':
     app.run(port=5000, debug=True)

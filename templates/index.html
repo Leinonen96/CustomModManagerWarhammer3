@@ -5,7 +5,6 @@
     <title>Lightweight WH3 Mod Manager</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
-        /* Responsive scaling for 4K/Ultrawide - using flexbox to fill viewport height */
         body { 
             font-family: sans-serif; 
             background: #121214; 
@@ -17,7 +16,6 @@
             box-sizing: border-box;
         }
         
-        /* Removing hardcoded max-widths allows the layout to expand gracefully */
         .controls { 
             display: flex; 
             gap: 10px; 
@@ -35,7 +33,7 @@
             gap: 20px; 
             width: 100%; 
             flex-grow: 1; 
-            min-height: 0; /* Critical for nested flexbox scrolling */
+            min-height: 0; 
         }
         
         .panel { 
@@ -53,10 +51,11 @@
         button:hover { background: #3cd01c; }
         .btn-blue { background: #2c8ed6; color: white; }
         .btn-blue:hover { background: #1c7ec6; }
+        .btn-red { background: #d62c2c; color: white; }
+        .btn-red:hover { background: #c61c1c; }
         
         .search-bar { width: 100%; margin-bottom: 10px; box-sizing: border-box; }
         
-        /* Removed max-height limitation; height strictly fills parent container */
         .mod-list { 
             flex-grow: 1; 
             background: #1a1a1e; 
@@ -81,7 +80,21 @@
         .mod-item:hover { border-color: #4cd62c; }
         .mod-item img { width: 56px; height: 56px; object-fit: cover; border-radius: 4px; background: #323238; flex-shrink: 0;}
         
-        /* New Mod Information Formatting */
+        /* Load Order Number Styling */
+        .order-num {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #555;
+            width: 35px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        
+        /* Active items get bright green numbers */
+        #active-mods .order-num {
+            color: #4cd62c;
+        }
+
         .mod-info { display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; }
         .mod-name { font-weight: bold; font-size: 1.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .mod-meta { font-size: 0.85em; color: #a1a1aa; margin-top: 4px; }
@@ -96,6 +109,7 @@
             <option value="">-- Select Preset --</option>
         </select>
         <button class="btn-blue" onclick="loadPreset()">Load Preset</button>
+        <button class="btn-red" onclick="deletePreset()">Delete Preset</button>
         
         <div style="width: 20px;"></div> 
         <input type="text" id="preset-name" placeholder="Name new preset...">
@@ -108,12 +122,13 @@
     <div class="container">
         <div class="panel">
             <h3 style="margin-top: 0;">Available Mods (Inactive)</h3>
-            <input type="text" id="search-box" class="search-bar" placeholder="Search mods..." onkeyup="filterMods()">
+            <input type="text" id="search-inactive" class="search-bar" placeholder="Search available mods..." onkeyup="filterInactive()">
             <div id="inactive-mods" class="mod-list"></div>
         </div>
         
         <div class="panel">
             <h3 style="margin-top: 0;">Active Load Order (Top loads first)</h3>
+            <input type="text" id="search-active" class="search-bar" placeholder="Search active mods..." onkeyup="filterActive()">
             <div id="active-mods" class="mod-list"></div>
         </div>
     </div>
@@ -127,18 +142,32 @@
             div.className = 'mod-item';
             div.dataset.id = mod.id;
             
-            // Expanded to include Steam Workshop metadata
+            // THE FIX: Fallback to generating the URL if the loaded JSON preset doesn't contain it
+            const steamUrl = mod.url || `https://steamcommunity.com/sharedfiles/filedetails/?id=${mod.id}`;
+            
             div.innerHTML = `
+                <div class="order-num">-</div>
                 <img src="${mod.thumb}" alt="Mod Thumbnail">
                 <div class="mod-info">
                     <div class="mod-name" title="${mod.name}">${mod.name}</div>
                     <div class="mod-meta">
                         Workshop ID: ${mod.id} | 
-                        <a href="${mod.url}" target="_blank" onclick="event.stopPropagation()">View on Steam</a>
+                        <a href="${steamUrl}" target="_blank" onclick="event.stopPropagation()">View on Steam</a>
                     </div>
                 </div>
             `;
             return div;
+        }
+
+        function updateLoadOrderNumbers() {
+            // Update Active Mods with ascending numbers
+            document.querySelectorAll('#active-mods .mod-item').forEach((el, index) => {
+                el.querySelector('.order-num').innerText = index + 1;
+            });
+            // Reset Inactive Mods to dashes
+            document.querySelectorAll('#inactive-mods .mod-item').forEach(el => {
+                el.querySelector('.order-num').innerText = '-';
+            });
         }
 
         async function init() {
@@ -150,16 +179,35 @@
                 inactiveContainer.appendChild(createModElement(mod));
             });
 
-            new Sortable(document.getElementById('inactive-mods'), { group: 'shared', animation: 150 });
-            new Sortable(document.getElementById('active-mods'), { group: 'shared', animation: 150 });
+            // Re-run numbering whenever an item is dropped/sorted
+            new Sortable(document.getElementById('inactive-mods'), { 
+                group: 'shared', 
+                animation: 150,
+                onSort: updateLoadOrderNumbers 
+            });
+            
+            new Sortable(document.getElementById('active-mods'), { 
+                group: 'shared', 
+                animation: 150,
+                onSort: updateLoadOrderNumbers
+            });
 
+            updateLoadOrderNumbers();
             refreshPresetDropdown();
         }
 
         // --- SEARCH LOGIC ---
-        function filterMods() {
-            const term = document.getElementById('search-box').value.toLowerCase();
+        function filterInactive() {
+            const term = document.getElementById('search-inactive').value.toLowerCase();
             document.querySelectorAll('#inactive-mods .mod-item').forEach(el => {
+                const name = el.querySelector('.mod-name').innerText.toLowerCase();
+                el.style.display = name.includes(term) ? 'flex' : 'none';
+            });
+        }
+
+        function filterActive() {
+            const term = document.getElementById('search-active').value.toLowerCase();
+            document.querySelectorAll('#active-mods .mod-item').forEach(el => {
                 const name = el.querySelector('.mod-name').innerText.toLowerCase();
                 el.style.display = name.includes(term) ? 'flex' : 'none';
             });
@@ -171,7 +219,6 @@
             const presets = await res.json();
             const select = document.getElementById('preset-select');
             
-            // Retain the currently selected value if possible
             const currentValue = select.value;
             
             select.innerHTML = '<option value="">-- Select Preset --</option>';
@@ -197,7 +244,6 @@
             });
             const result = await response.json();
             
-            // Set the dropdown to match the newly saved/updated preset
             document.getElementById('preset-select').value = name;
             
             alert(result.message);
@@ -217,22 +263,41 @@
             activeContainer.innerHTML = '';
             inactiveContainer.innerHTML = '';
 
-            // Populate Active List in the saved order
             activeData.forEach(mod => activeContainer.appendChild(createModElement(mod)));
 
-            // Populate Inactive List with everything else
             allMods.forEach(mod => {
                 if(!activeIds.includes(mod.id)) {
                     inactiveContainer.appendChild(createModElement(mod));
                 }
             });
             
-            // Clear search filter
-            document.getElementById('search-box').value = '';
-            filterMods();
+            // Clear searches
+            document.getElementById('search-inactive').value = '';
+            document.getElementById('search-active').value = '';
+            filterInactive();
+            filterActive();
             
-            // Auto-populate the input box so the user can easily "Save / Update" changes
+            updateLoadOrderNumbers();
+            
             document.getElementById('preset-name').value = name;
+        }
+
+        async function deletePreset() {
+            const name = document.getElementById('preset-select').value;
+            if(!name) return alert('Please select a preset to delete.');
+
+            const confirmed = confirm(`Are you sure you want to delete the preset "${name}"? This cannot be undone.`);
+            if(!confirmed) return;
+
+            const response = await fetch(`/api/preset/${name}`, { method: 'DELETE' });
+            const result = await response.json();
+            
+            alert(result.message);
+            
+            // Clear selections
+            document.getElementById('preset-select').value = "";
+            document.getElementById('preset-name').value = "";
+            refreshPresetDropdown();
         }
 
         // --- SYMLINK APPLICATION ---
