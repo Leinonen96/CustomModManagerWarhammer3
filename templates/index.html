@@ -5,23 +5,88 @@
     <title>Lightweight WH3 Mod Manager</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
-        body { font-family: sans-serif; background: #121214; color: #e1e1e6; margin: 20px; }
-        .container { display: flex; gap: 20px; max-width: 1200px; margin: 0 auto; }
-        .panel { flex: 1; background: #202024; padding: 15px; border-radius: 6px; min-height: 500px; display: flex; flex-direction: column; }
+        /* Responsive scaling for 4K/Ultrawide - using flexbox to fill viewport height */
+        body { 
+            font-family: sans-serif; 
+            background: #121214; 
+            color: #e1e1e6; 
+            margin: 2vh 2vw; 
+            height: 96vh; 
+            display: flex; 
+            flex-direction: column; 
+            box-sizing: border-box;
+        }
         
-        .controls { display: flex; gap: 10px; margin-bottom: 20px; align-items: center; background: #202024; padding: 15px; border-radius: 6px; max-width: 1200px; margin: 0 auto 20px auto;}
+        /* Removing hardcoded max-widths allows the layout to expand gracefully */
+        .controls { 
+            display: flex; 
+            gap: 10px; 
+            margin-bottom: 20px; 
+            align-items: center; 
+            background: #202024; 
+            padding: 15px; 
+            border-radius: 6px; 
+            width: 100%; 
+            box-sizing: border-box;
+        }
+        
+        .container { 
+            display: flex; 
+            gap: 20px; 
+            width: 100%; 
+            flex-grow: 1; 
+            min-height: 0; /* Critical for nested flexbox scrolling */
+        }
+        
+        .panel { 
+            flex: 1; 
+            background: #202024; 
+            padding: 15px; 
+            border-radius: 6px; 
+            display: flex; 
+            flex-direction: column; 
+            min-height: 0; 
+        }
+        
         input, select { padding: 10px; border-radius: 4px; border: 1px solid #323238; background: #121214; color: #fff; }
-        button { background: #4cd62c; color: #000; border: none; padding: 10px 15px; font-weight: bold; border-radius: 4px; cursor: pointer; }
+        button { background: #4cd62c; color: #000; border: none; padding: 10px 15px; font-weight: bold; border-radius: 4px; cursor: pointer; transition: background 0.2s;}
         button:hover { background: #3cd01c; }
         .btn-blue { background: #2c8ed6; color: white; }
         .btn-blue:hover { background: #1c7ec6; }
         
         .search-bar { width: 100%; margin-bottom: 10px; box-sizing: border-box; }
-        .mod-list { flex-grow: 1; background: #1a1a1e; border: 1px solid #29292e; border-radius: 4px; padding: 10px; overflow-y: auto; max-height: 600px; }
-        .mod-item { display: flex; align-items: center; gap: 15px; padding: 10px; margin-bottom: 8px; background: #29292e; border-radius: 4px; cursor: grab; border: 1px solid transparent; }
+        
+        /* Removed max-height limitation; height strictly fills parent container */
+        .mod-list { 
+            flex-grow: 1; 
+            background: #1a1a1e; 
+            border: 1px solid #29292e; 
+            border-radius: 4px; 
+            padding: 10px; 
+            overflow-y: auto; 
+            height: 100%; 
+        }
+        
+        .mod-item { 
+            display: flex; 
+            align-items: center; 
+            gap: 15px; 
+            padding: 10px; 
+            margin-bottom: 8px; 
+            background: #29292e; 
+            border-radius: 4px; 
+            cursor: grab; 
+            border: 1px solid transparent; 
+        }
         .mod-item:hover { border-color: #4cd62c; }
-        .mod-item img { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; background: #323238; }
-        .mod-name { flex-grow: 1; font-weight: bold; font-size: 0.9em; word-break: break-all; }
+        .mod-item img { width: 56px; height: 56px; object-fit: cover; border-radius: 4px; background: #323238; flex-shrink: 0;}
+        
+        /* New Mod Information Formatting */
+        .mod-info { display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; }
+        .mod-name { font-weight: bold; font-size: 1.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .mod-meta { font-size: 0.85em; color: #a1a1aa; margin-top: 4px; }
+        .mod-meta a { color: #4cd62c; text-decoration: none; }
+        .mod-meta a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -32,21 +97,23 @@
         </select>
         <button class="btn-blue" onclick="loadPreset()">Load Preset</button>
         
-        <div style="width: 20px;"></div> <input type="text" id="preset-name" placeholder="Name new preset...">
-        <button class="btn-blue" onclick="savePreset()">Save Preset</button>
+        <div style="width: 20px;"></div> 
+        <input type="text" id="preset-name" placeholder="Name new preset...">
+        <button class="btn-blue" onclick="savePreset()">Save / Update Preset</button>
         
-        <div style="flex-grow: 1;"></div> <button onclick="applyLoadOrder()">APPLY TO GAME</button>
+        <div style="flex-grow: 1;"></div> 
+        <button onclick="applyLoadOrder()">APPLY TO GAME</button>
     </div>
 
     <div class="container">
         <div class="panel">
-            <h3>Available Mods (Inactive)</h3>
+            <h3 style="margin-top: 0;">Available Mods (Inactive)</h3>
             <input type="text" id="search-box" class="search-bar" placeholder="Search mods..." onkeyup="filterMods()">
             <div id="inactive-mods" class="mod-list"></div>
         </div>
         
         <div class="panel">
-            <h3>Active Load Order (Top loads first)</h3>
+            <h3 style="margin-top: 0;">Active Load Order (Top loads first)</h3>
             <div id="active-mods" class="mod-list"></div>
         </div>
     </div>
@@ -59,25 +126,30 @@
             const div = document.createElement('div');
             div.className = 'mod-item';
             div.dataset.id = mod.id;
+            
+            // Expanded to include Steam Workshop metadata
             div.innerHTML = `
-                <img src="${mod.thumb}" alt="">
-                <div class="mod-name">${mod.name}</div>
+                <img src="${mod.thumb}" alt="Mod Thumbnail">
+                <div class="mod-info">
+                    <div class="mod-name" title="${mod.name}">${mod.name}</div>
+                    <div class="mod-meta">
+                        Workshop ID: ${mod.id} | 
+                        <a href="${mod.url}" target="_blank" onclick="event.stopPropagation()">View on Steam</a>
+                    </div>
+                </div>
             `;
             return div;
         }
 
         async function init() {
-            // Fetch all mods
             const response = await fetch('/api/mods');
             allMods = await response.json();
             
-            // Populate inactive initially
             const inactiveContainer = document.getElementById('inactive-mods');
             allMods.forEach(mod => {
                 inactiveContainer.appendChild(createModElement(mod));
             });
 
-            // Initialize Drag & Drop
             new Sortable(document.getElementById('inactive-mods'), { group: 'shared', animation: 150 });
             new Sortable(document.getElementById('active-mods'), { group: 'shared', animation: 150 });
 
@@ -87,7 +159,7 @@
         // --- SEARCH LOGIC ---
         function filterMods() {
             const term = document.getElementById('search-box').value.toLowerCase();
-            document.querySelectorAll('.mod-item').forEach(el => {
+            document.querySelectorAll('#inactive-mods .mod-item').forEach(el => {
                 const name = el.querySelector('.mod-name').innerText.toLowerCase();
                 el.style.display = name.includes(term) ? 'flex' : 'none';
             });
@@ -98,9 +170,14 @@
             const res = await fetch('/api/presets');
             const presets = await res.json();
             const select = document.getElementById('preset-select');
+            
+            // Retain the currently selected value if possible
+            const currentValue = select.value;
+            
             select.innerHTML = '<option value="">-- Select Preset --</option>';
             presets.forEach(p => {
-                select.innerHTML += `<option value="${p}">${p}</option>`;
+                const isSelected = p === currentValue ? 'selected' : '';
+                select.innerHTML += `<option value="${p}" ${isSelected}>${p}</option>`;
             });
         }
 
@@ -119,6 +196,10 @@
                 body: JSON.stringify(currentOrder)
             });
             const result = await response.json();
+            
+            // Set the dropdown to match the newly saved/updated preset
+            document.getElementById('preset-select').value = name;
+            
             alert(result.message);
             refreshPresetDropdown();
         }
@@ -136,19 +217,22 @@
             activeContainer.innerHTML = '';
             inactiveContainer.innerHTML = '';
 
-            // 1. Populate Active List in the saved order
+            // Populate Active List in the saved order
             activeData.forEach(mod => activeContainer.appendChild(createModElement(mod)));
 
-            // 2. Populate Inactive List with everything else
+            // Populate Inactive List with everything else
             allMods.forEach(mod => {
                 if(!activeIds.includes(mod.id)) {
                     inactiveContainer.appendChild(createModElement(mod));
                 }
             });
             
-            // Clear search filter so everything is visible
+            // Clear search filter
             document.getElementById('search-box').value = '';
             filterMods();
+            
+            // Auto-populate the input box so the user can easily "Save / Update" changes
+            document.getElementById('preset-name').value = name;
         }
 
         // --- SYMLINK APPLICATION ---

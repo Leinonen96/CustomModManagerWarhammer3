@@ -24,6 +24,7 @@ def discover_workshop_mods():
             pack_files = [f for f in os.listdir(folder_path) if f.endswith('.pack')]
             for pack in pack_files:
                 pack_path = os.path.join(folder_path, pack)
+                
                 # Look for matching thumbnail image
                 img_name = pack.replace('.pack', '.png')
                 img_path = os.path.join(folder_path, img_name)
@@ -34,7 +35,9 @@ def discover_workshop_mods():
                     "id": folder,
                     "name": pack,
                     "real_path": pack_path,
-                    "thumb": f"/workshop_assets/{folder}/{img_name}"
+                    "thumb": f"/workshop_assets/{folder}/{img_name}",
+                    # The folder name is the Steam Workshop ID
+                    "url": f"https://steamcommunity.com/sharedfiles/filedetails/?id={folder}"
                 })
     return mods
 
@@ -48,7 +51,7 @@ def get_mods():
 
 @app.route('/api/apply', methods=['POST'])
 def apply_load_order():
-    data = request.json  # Array of mod objects in sorted order
+    data = request.json
     
     try:
         # 1. Safely remove existing symlinks in the game data folder
@@ -62,7 +65,7 @@ def apply_load_order():
         for mod in data:
             target_link = os.path.join(GAME_DATA_DIR, mod['name'])
             
-            # THE FIX: If a physical file or broken link is in the way, remove it first
+            # If a physical file or broken link is in the way, remove it first
             if os.path.lexists(target_link):
                 os.unlink(target_link)
                 
