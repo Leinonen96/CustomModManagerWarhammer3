@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Lightweight WH3 Mod Manager</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #121214; color: #e1e1e6; margin: 20px; }
+        .container { display: flex; gap: 20px; max-width: 1200px; margin: 0 auto; }
+        .panel { flex: 1; background: #202024; padding: 15px; border-radius: 6px; min-height: 500px; display: flex; flex-direction: column; }
+        
+        .controls { display: flex; gap: 10px; margin-bottom: 20px; align-items: center; background: #202024; padding: 15px; border-radius: 6px; max-width: 1200px; margin: 0 auto 20px auto;}
+        input, select { padding: 10px; border-radius: 4px; border: 1px solid #323238; background: #121214; color: #fff; }
+        button { background: #4cd62c; color: #000; border: none; padding: 10px 15px; font-weight: bold; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #3cd01c; }
+        .btn-blue { background: #2c8ed6; color: white; }
+        .btn-blue:hover { background: #1c7ec6; }
+        
+        .search-bar { width: 100%; margin-bottom: 10px; box-sizing: border-box; }
+        .mod-list { flex-grow: 1; background: #1a1a1e; border: 1px solid #29292e; border-radius: 4px; padding: 10px; overflow-y: auto; max-height: 600px; }
+        .mod-item { display: flex; align-items: center; gap: 15px; padding: 10px; margin-bottom: 8px; background: #29292e; border-radius: 4px; cursor: grab; border: 1px solid transparent; }
+        .mod-item:hover { border-color: #4cd62c; }
+        .mod-item img { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; background: #323238; }
+        .mod-name { flex-grow: 1; font-weight: bold; font-size: 0.9em; word-break: break-all; }
+    </style>
+</head>
+<body>
+
+    <div class="controls">
+        <select id="preset-select">
+            <option value="">-- Select Preset --</option>
+        </select>
+        <button class="btn-blue" onclick="loadPreset()">Load Preset</button>
+        
+        <div style="width: 20px;"></div> <input type="text" id="preset-name" placeholder="Name new preset...">
+        <button class="btn-blue" onclick="savePreset()">Save Preset</button>
+        
+        <div style="flex-grow: 1;"></div> <button onclick="applyLoadOrder()">APPLY TO GAME</button>
+    </div>
+
+    <div class="container">
+        <div class="panel">
+            <h3>Available Mods (Inactive)</h3>
+            <input type="text" id="search-box" class="search-bar" placeholder="Search mods..." onkeyup="filterMods()">
+            <div id="inactive-mods" class="mod-list"></div>
+        </div>
+        
+        <div class="panel">
+            <h3>Active Load Order (Top loads first)</h3>
+            <div id="active-mods" class="mod-list"></div>
+        </div>
+    </div>
+
+    <script>
+        let allMods = [];
+
+        // --- CORE UI GENERATION ---
+        function createModElement(mod) {
+            const div = document.createElement('div');
+            div.className = 'mod-item';
+            div.dataset.id = mod.id;
+            div.innerHTML = `
+                <img src="${mod.thumb}" alt="">
+                <div class="mod-name">${mod.name}</div>
+            `;
+            return div;
+        }
+
+        async function init() {
+            // Fetch all mods
+            const response = await fetch('/api/mods');
+            allMods = await response.json();
+            
+            // Populate inactive initially
+            const inactiveContainer = document.getElementById('inactive-mods');
+            allMods.forEach(mod => {
+                inactiveContainer.appendChild(createModElement(mod));
+            });
+
+            // Initialize Drag & Drop
+            new Sortable(document.getElementById('inactive-mods'), { group: 'shared', animation: 150 });
+            new Sortable(document.getElementById('active-mods'), { group: 'shared', animation: 150 });
+
+            refreshPresetDropdown();
+        }
+
+        // --- SEARCH LOGIC ---
+        function filterMods() {
+            const term = document.getElementById('search-box').value.toLowerCase();
+            document.querySelectorAll('.mod-item').forEach(el => {
+                const name = el.querySelector('.mod-name').innerText.toLowerCase();
+                el.style.display = name.includes(term) ? 'flex' : 'none';
+            });
+        }
+
+        // --- PRESET LOGIC ---
+        async function refreshPresetDropdown() {
+            const res = await fetch('/api/presets');
+            const presets = await res.json();
+            const select = document.getElementById('preset-select');
+            select.innerHTML = '<option value="">-- Select Preset --</option>';
+            presets.forEach(p => {
+                select.innerHTML += `<option value="${p}">${p}</option>`;
+            });
+        }
+
+        async function savePreset() {
+            const name = document.getElementById('preset-name').value.trim();
+            if(!name) return alert('Please enter a preset name!');
+
+            const activeElements = document.getElementById('active-mods').children;
+            const currentOrder = Array.from(activeElements).map(el => {
+                return allMods.find(m => m.id === el.dataset.id);
+            });
+
+            const response = await fetch(`/api/preset/${name}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(currentOrder)
+            });
+            const result = await response.json();
+            alert(result.message);
+            refreshPresetDropdown();
+        }
+
+        async function loadPreset() {
+            const name = document.getElementById('preset-select').value;
+            if(!name) return alert('Please select a preset to load.');
+
+            const res = await fetch(`/api/preset/${name}`);
+            const activeData = await res.json();
+            const activeIds = activeData.map(m => m.id);
+
+            const activeContainer = document.getElementById('active-mods');
+            const inactiveContainer = document.getElementById('inactive-mods');
+            activeContainer.innerHTML = '';
+            inactiveContainer.innerHTML = '';
+
+            // 1. Populate Active List in the saved order
+            activeData.forEach(mod => activeContainer.appendChild(createModElement(mod)));
+
+            // 2. Populate Inactive List with everything else
+            allMods.forEach(mod => {
+                if(!activeIds.includes(mod.id)) {
+                    inactiveContainer.appendChild(createModElement(mod));
+                }
+            });
+            
+            // Clear search filter so everything is visible
+            document.getElementById('search-box').value = '';
+            filterMods();
+        }
+
+        // --- SYMLINK APPLICATION ---
+        async function applyLoadOrder() {
+            const activeElements = document.getElementById('active-mods').children;
+            const currentOrder = Array.from(activeElements).map(el => {
+                return allMods.find(m => m.id === el.dataset.id);
+            });
+
+            const response = await fetch('/api/apply', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(currentOrder)
+            });
+            const result = await response.json();
+            alert(result.message);
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
