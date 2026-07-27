@@ -1,5 +1,7 @@
 import os
 import json
+import webbrowser
+from threading import Timer
 from flask import Flask, render_template, jsonify, request
 
 app = Flask(__name__)
@@ -100,6 +102,11 @@ def apply_load_order():
             f.write('\n'.join(script_lines) + '\n')
             
         return jsonify({"status": "success", "message": "Load order applied successfully!"})
+    except PermissionError:
+        return jsonify({
+            "status": "error", 
+            "message": "Permission Denied. If you are on Windows, you must run this tool as an Administrator or enable Developer Mode to create symlinks."
+        }), 500
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
@@ -142,5 +149,13 @@ def delete_preset(name):
         return jsonify({"status": "success", "message": f"Preset '{name}' deleted successfully!"})
     return jsonify({"status": "error", "message": "Preset not found!"}), 404
 
+def open_browser():
+    webbrowser.open_new('http://127.0.0.1:5000/')
+
 if __name__ == '__main__':
-    app.run(port=5000, debug=True)
+    # Wait 1.5 seconds for the server to start, then open the browser
+    Timer(1.5, open_browser).start()
+    
+    # use_reloader=False is required here so the browser doesn't open twice 
+    # (Flask's debug reloader spawns a duplicate process)
+    app.run(port=5000, debug=True, use_reloader=False)
