@@ -7,7 +7,7 @@ SHORTCUT_PATH="$HOME/.local/share/applications/wh3-mod-manager.desktop"
 echo "Generating Linux desktop shortcut..."
 
 # Use your specific SVG icon, otherwise fallback to a generic system icon
-ICON_PATH="$DIR/gemini-svg.svg"
+ICON_PATH="$DIR/static/gemini-svg.svg"
 if [ ! -f "$ICON_PATH" ]; then
     ICON_PATH="utilities-terminal"
     echo "Warning: gemini-svg.svg not found in project root. Using generic fallback icon."
