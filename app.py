@@ -64,6 +64,27 @@ def discover_workshop_mods():
                 })
     return mods
 
+# --- CONFIGURATION ENDPOINTS ---
+@app.route('/api/config', methods=['GET'])
+def get_config():
+    return jsonify(load_config())
+
+@app.route('/api/config', methods=['POST'])
+def save_config_api():
+    global WORKSHOP_DIR, GAME_DATA_DIR, SCRIPT_FILE
+    data = request.json
+    
+    # Save to file
+    with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=4)
+        
+    # Update the running application variables immediately
+    WORKSHOP_DIR = data.get("WORKSHOP_DIR", "")
+    GAME_DATA_DIR = data.get("GAME_DATA_DIR", "")
+    SCRIPT_FILE = data.get("SCRIPT_FILE", "")
+    
+    return jsonify({"status": "success", "message": "Settings saved successfully!"})
+
 @app.route('/')
 def index():
     return render_template('index.html')
