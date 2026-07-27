@@ -6,9 +6,16 @@ cd "$DIR" || exit 1
 
 echo "Initializing WH3 Mod Manager..."
 
+# Auto-Install Desktop Shortcut
+SHORTCUT_PATH="$HOME/.local/share/applications/wh3-mod-manager.desktop"
+if [ ! -f "$SHORTCUT_PATH" ]; then
+    echo "First run on Linux detected. Generating desktop shortcut..."
+    bash "$DIR/install_shortcut.sh"
+fi
+
 # Create a local virtual environment if it doesn't exist
 if [ ! -d "venv" ]; then
-    echo "First run detected. Creating Python virtual environment..."
+    echo "Creating Python virtual environment..."
     python3 -m venv venv
 fi
 
