@@ -4,14 +4,35 @@ from flask import Flask, render_template, jsonify, request
 
 app = Flask(__name__)
 
-# System Configurations
-WORKSHOP_DIR = "/mnt/GG/SteamLibrary/steamapps/workshop/content/1142710"
-GAME_DATA_DIR = "/mnt/GG/SteamLibrary/steamapps/common/Total War WARHAMMER III/data"
-SCRIPT_FILE = "/mnt/GG/SteamLibrary/steamapps/compatdata/1142710/pfx/drive_c/users/steamuser/AppData/Roaming/The Creative Assembly/Warhammer3/scripts/user.script.txt"
+# --- CONFIGURATION SETUP ---
+CONFIG_FILE = "config.json"
 PRESET_DIR = "./presets"
-
 os.makedirs(PRESET_DIR, exist_ok=True)
 
+# Default configuration template using standard Windows paths
+DEFAULT_CONFIG = {
+    "WORKSHOP_DIR": "C:/Program Files (x86)/Steam/steamapps/workshop/content/1142710",
+    "GAME_DATA_DIR": "C:/Program Files (x86)/Steam/steamapps/common/Total War WARHAMMER III/data",
+    "SCRIPT_FILE": "C:/Users/Public/AppData/Roaming/The Creative Assembly/Warhammer3/scripts/user.script.txt"
+}
+
+def load_config():
+    if not os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+            json.dump(DEFAULT_CONFIG, f, indent=4)
+        return DEFAULT_CONFIG
+    
+    with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+# Load configuration and assign variables dynamically
+config = load_config()
+WORKSHOP_DIR = config.get("WORKSHOP_DIR", "")
+GAME_DATA_DIR = config.get("GAME_DATA_DIR", "")
+SCRIPT_FILE = config.get("SCRIPT_FILE", "")
+
+
+# --- MOD MANAGEMENT ---
 def discover_workshop_mods():
     mods = []
     if not os.path.exists(WORKSHOP_DIR):
