@@ -33,3 +33,4 @@ presets/
 # User Data / App Data
 presets/
 config.jsonnode_modules/
+node_modules/
