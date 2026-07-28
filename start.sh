@@ -28,4 +28,4 @@ pip install -r requirements.txt -q
 
 # Run the backend server
 echo "Starting application..."
-python3 app.py
+python3 run.py

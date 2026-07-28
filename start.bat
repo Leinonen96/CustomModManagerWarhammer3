@@ -21,6 +21,6 @@ pip install -r requirements.txt -q
 
 :: Run the backend server
 echo Starting application...
-python app.py
+python run.py
 
 pause

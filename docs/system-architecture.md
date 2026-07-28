@@ -36,31 +36,16 @@ This document outlines the architectural design of the Total War: WARHAMMER III 
 
 ## System Components
 
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Frontend      │    │   REST API      │    │   Backend       │
-│   (PWA)         │───▶│   (Flask)       │───▶│   (Python)      │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                              │
-                              ▼
-                    ┌─────────────────┐
-                    │   File System   │
-                    │   Operations    │
-                    └─────────────────┘
-```
-
-## Technology Stack
-
-### Backend
-- **Language**: Python 3.x
-- **Framework**: Flask
-- **File Handling**: Standard library with enhanced path manipulation
-
-### Frontend
-- **Technology**: Progressive Web Application
-- **UI Framework**: Vanilla JavaScript with SortableJS for drag-and-drop functionality
-- **Styling**: CSS3 with modern layout techniques
-
-### Deployment
-- **Cross-platform**: Single codebase supporting Windows, macOS, and Linux
-- **Packaging**: Virtual environment with requirements.txt management
+```text
+┌─────────────────┐    ┌─────────────────┐    ┌──────────────────────┐
+│   Frontend      │    │   REST API      │    │ Backend (Modular)    │
+│   (PWA)         │───▶│ (Routes Module) │───▶│ - core.py (Logic)  │
+└─────────────────┘    └─────────────────┘    │ - config.py (State)  │
+                                              │ - tray.py (OS UI)    │
+                                              └──────────────────────┘
+                                                         │
+                                                         ▼
+                                               ┌─────────────────┐
+                                               │   File System   │
+                                               │   Operations    │
+                                               └─────────────────┘
