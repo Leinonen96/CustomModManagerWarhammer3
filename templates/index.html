@@ -10,8 +10,14 @@
     <!-- Local Static Stylesheet -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='gemini-svg.svg') }}">
+    <!-- App Icon -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='gemini-png.png') }}">
+
+    <!-- PWA Manifest & Theme -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#202024">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 <body>
 
@@ -86,5 +92,15 @@
 
     <!-- External JavaScript File -->
     <script src="{{ url_for('static', filename='main.js') }}"></script>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('Service Worker registered!', reg))
+                    .catch(err => console.error('Service Worker registration failed: ', err));
+            });
+        }
+    </script>
 </body>
 </html>

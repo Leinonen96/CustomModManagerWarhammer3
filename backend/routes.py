@@ -17,6 +17,18 @@ def get_current_paths():
 def index():
     return render_template('index.html')
 
+from flask import send_from_directory
+
+@main_routes.route('/manifest.json')
+def manifest():
+    # Serve manifest from the static folder but expose it at the root URL
+    return send_from_directory('../static', 'manifest.json')
+
+@main_routes.route('/sw.js')
+def service_worker():
+    # Serve service worker from root, explicitly setting the correct JS mime type
+    return send_from_directory('../static', 'sw.js', mimetype='application/javascript')
+
 @main_routes.route('/api/config', methods=['GET'])
 def get_config_api():
     return jsonify(load_config())
