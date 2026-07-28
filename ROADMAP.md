@@ -1,54 +1,91 @@
-## Proposed Frontend Architecture
+## The Modern Tauri v2 + Dynamic Sidecar Plan
 
-First, let's look at how your `frontend/` directory will be restructured. We will break the monolithic `main.ts` into specific domains of responsibility.
+**1.Scaffold with create-tauri-app:**Tauri v2.
 
-Plaintext
+Instead of manually initializing, use the modern bootstrap tool which configures Vite, TypeScript, and Tauri v2 all at once.
+
+Run `npm create tauri-app@latest`.
+
+Choose **TypeScript** and **Vite**. This creates a perfectly wired frontend + backend directory structure out of the box, saving you from manually moving `index.html` and configuring build paths.
+
+**2.Dynamic Port Allocation in Flask:**Robust Backend.
+
+Update your Flask `run.py` to ask the OS for a free port instead of forcing port 5000:
+
+Python
 
 ```
-frontend/
-├── main.ts              # Entry point: Initializes the app and binds events
-├── types.ts             # Shared interfaces (Mod, AppConfig)
-├── state.ts             # Centralized state (holds allMods, activeMods arrays)
-├── api.ts               # API layer: ALL fetch() calls to Flask live here
-└── components/
-    ├── modManager.ts    # Logic for Sortable.js and DOM rendering
-    ├── presets.ts       # Preset saving/loading logic
-    └── settings.ts      # Settings modal logic
+import socket
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+sock.bind(('127.0.0.1', 0))
+port = sock.getsockname()[1]
+sock.close()
+
+# Print the port so Tauri can capture it
+print(f"BACKEND_PORT={port}", flush=True)
+app.run(host='127.0.0.1', port=port, debug=False)
 ```
 
-## The Migration Plan
+**3.Intercept and Pass the Port:**The Rust Bridge.
 
-**1.Initialize a Modern Build System:**Under 5 min.
+In `src-tauri/src/main.rs`, use Tauri's `Command` API to spawn the Flask sidecar.
 
-Install a bundler to handle TypeScript imports. Run `npm install -D vite`. You will configure Vite (via a `vite.config.ts` file) to take `frontend/main.ts` as the entry point and output the compiled bundle directly to your `static/` folder. This means Flask doesn't need to change how it serves the static files.
+Write a Rust function that listens to the sidecar's stdout, captures `BACKEND_PORT=xxxxx`, and exposes a Tauri command (e.g., `get_backend_port`) so the TypeScript frontend can ask Rust what port Flask is running on.
 
-**2.Extract the API Layer:**Backend Bridge.
+**4.Dynamic API Abstraction:**Frontend Independence.
 
-Create `frontend/api.ts`. Move every single `fetch()` call out of your current `main.ts` into this file.
+In `frontend/api.ts`, instead of hardcoding `fetch('http://localhost:5000/...')`, fetch the port from Rust on startup:
 
-Wrap them in exported functions (e.g., `export async function fetchMods()`, `export async function saveConfig(config)`). _Why?_ If you rewrite your backend in Rust later, you only change this one file. The rest of the UI doesn't care.
+TypeScript
 
-**3.Centralize State and Types:**Data Management.
+```
+import { invoke } from '@tauri-apps/api/core';
 
-Move `interface Mod` and `interface AppConfig` into `types.ts`. Create `state.ts` to hold your global variables like `let allMods = []`. Export getter and setter functions so your components can safely read and update the mod list without mutating global variables directly.
+let baseUrl = '';
 
-**4.Modularize the UI Components:**DOM Manipulation.
+export async function initApi() {
+    const port = await invoke('get_backend_port');
+    baseUrl = `http://127.0.0.1:${port}`;
+}
 
-Create the `components/` folder. Move the settings modal logic into `settings.ts`. Move the preset dropdown and save/load logic into `presets.ts`. Move the `Sortable` initialization and HTML element creation into `modManager.ts`. Each file will import the data it needs from `state.ts` and the network calls it needs from `api.ts`.
+export async function fetchMods() {
+    const res = await fetch(`${baseUrl}/api/mods`);
+    return res.json();
+}
+```
 
-**5.Update Flask Template:**The Bridge.
+**5.Freeze and Package (Wayland/Flatpak):**Linux First.
 
-In `templates/index.html`, update your script tag to support the new bundled output. If you use Vite, it will generate a single file, but if you decide to use native browser modules without a bundler, you must add `type="module"` to the script tag: `<script type="module" src="{{ url_for('static', filename='main.js') }}"></script>`.
-
-### The Backend (Flask) Integration
-
-The beauty of this plan is that **Flask barely has to change.**
-
-Right now, Flask's job is twofold:
-
-1. Serve the `index.html` and the `static/main.js` file.
+1. **Freeze:** Run `pyinstaller --noconsole --onefile run.py`. The `--noconsole` flag is critical—it ensures Python runs purely in the background without tripping up Wayland or XWayland window managers.
     
-2. Listen for JSON requests on `/api/...` routes.
-    
+2. **Package:** Tauri v2 automatically generates an `.AppImage`. For a true modern Linux experience, you can add `flatpak` to Tauri's bundler targets in `tauri.conf.json`, which isolates your app cleanly from the host system.
 
-By keeping Flask exactly as it is, and simply changing _how_ the TypeScript is organized before it compiles into `static/main.js`, you maintain complete compatibility. The only backend change you might consider during this phase is updating your `/api/heartbeat` route to ensure it plays nicely with the new modular frontend's lifecycle hooks.
+
+.
+├── backend/                  # [PYTHON] The raw Flask source code
+│   ├── core.py
+│   ├── routes.py
+│   └── __init__.py
+├── run.py                    # [PYTHON] Entry point (updated for dynamic ports)
+├── requirements.txt          
+│
+├── src-tauri/                # [RUST] The Tauri native desktop shell
+│   ├── binaries/             # └─ Compiled Python executables go here
+│   │   └── wh3-backend-x86_64-unknown-linux-gnu  # (PyInstaller output)
+│   ├── src/                  
+│   │   └── main.rs           # └─ Rust logic: Spawns sidecar & passes port to UI
+│   ├── tauri.conf.json       # └─ Tauri config: window size, sidecar declarations
+│   ├── Cargo.toml            # └─ Rust dependencies
+│   └── build.rs              
+│
+├── frontend/                 # [TYPESCRIPT] Modular UI source code
+│   ├── components/           # └─ UI modules (modManager.ts, presets.ts)
+│   ├── api.ts                # └─ Dynamic API layer (talks to Rust & Python)
+│   ├── state.ts              # └─ Application state 
+│   ├── main.ts               # └─ Main Vite entry point
+│   └── style.css             
+│
+├── index.html                # [VITE] Entry point (moved out of Flask templates/)
+├── package.json              # Node scripts (npm run dev, npm run tauri build)
+├── vite.config.ts            # Vite build pipeline configuration
+└── tsconfig.json             # TypeScript rules
