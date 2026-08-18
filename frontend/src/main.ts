@@ -7,6 +7,7 @@ import { fetchConfig } from './api/configApi';
 import { fetchMods } from './api/modApi';
 import { TitleBar } from './components/TitleBar';
 import { ZoomController } from './controllers/ZoomController';
+import { WindowResizer } from './controllers/WindowResizer';
 import { SettingsModal } from './components/SettingsModal';
 import { ModListManager } from './components/ModList';
 import { HeaderControls } from './components/HeaderControls';
@@ -16,14 +17,16 @@ import { Toast } from './components/Toast';
 class App {
     private titleBar!: TitleBar;
     private zoomController!: ZoomController;
+    private windowResizer!: WindowResizer;
     private settingsModal!: SettingsModal;
     private modListManager!: ModListManager;
     private headerControls!: HeaderControls;
     private searchController!: SearchController;
 
     public async init(): Promise<void> {
-        // Initialize frameless window titlebar & zoom controller
+        // Initialize frameless window titlebar, resizer & zoom controller
         this.titleBar = new TitleBar();
+        this.windowResizer = new WindowResizer();
         this.zoomController = new ZoomController();
 
         this.settingsModal = new SettingsModal();

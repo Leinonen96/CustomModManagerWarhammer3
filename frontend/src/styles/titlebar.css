@@ -89,3 +89,78 @@
     height: 12px;
     fill: currentColor;
 }
+
+/* --- FRAMELESS WINDOW RESIZE BORDERS --- */
+.window-resize-handles {
+    pointer-events: none;
+}
+
+.resize-handle {
+    position: fixed;
+    z-index: 99999;
+    pointer-events: auto;
+}
+
+.resize-top {
+    top: 0;
+    left: 8px;
+    right: 8px;
+    height: 6px;
+    cursor: n-resize;
+}
+
+.resize-bottom {
+    bottom: 0;
+    left: 8px;
+    right: 8px;
+    height: 6px;
+    cursor: s-resize;
+}
+
+.resize-left {
+    top: 8px;
+    bottom: 8px;
+    left: 0;
+    width: 6px;
+    cursor: w-resize;
+}
+
+.resize-right {
+    top: 8px;
+    bottom: 8px;
+    right: 0;
+    width: 6px;
+    cursor: e-resize;
+}
+
+.resize-top-left {
+    top: 0;
+    left: 0;
+    width: 10px;
+    height: 10px;
+    cursor: nw-resize;
+}
+
+.resize-top-right {
+    top: 0;
+    right: 0;
+    width: 10px;
+    height: 10px;
+    cursor: ne-resize;
+}
+
+.resize-bottom-left {
+    bottom: 0;
+    left: 0;
+    width: 10px;
+    height: 10px;
+    cursor: sw-resize;
+}
+
+.resize-bottom-right {
+    bottom: 0;
+    right: 0;
+    width: 10px;
+    height: 10px;
+    cursor: se-resize;
+}
