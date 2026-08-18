@@ -439,16 +439,29 @@ export class InspectorDrawer {
         const steamUrl = mod.url || `https://steamcommunity.com/sharedfiles/filedetails/?id=${mod.id}`;
         const deps = manifest?.dependencies || [];
         const missingDeps = summary?.missing_dependencies || [];
+        const dependents = summary?.dependents || [];
 
-        let depsHtml = '';
+        let prereqsHtml = '';
         if (deps.length === 0) {
-            depsHtml = `
-                <div class="drawer-empty-state">
-                    <p>No hard dependencies declared in this mod's pack header.</p>
-                </div>
-            `;
+            if (summary?.is_framework) {
+                prereqsHtml = `
+                    <div class="dep-root-banner">
+                        <span class="dep-root-icon">📦</span>
+                        <div class="dep-root-text">
+                            <strong>Foundational Core Framework</strong>
+                            <p>This mod acts as a root engine / parent framework and does not require other mods.</p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                prereqsHtml = `
+                    <div class="drawer-empty-state-mini">
+                        <p>No prerequisite dependencies declared in this pack.</p>
+                    </div>
+                `;
+            }
         } else {
-            depsHtml = `
+            prereqsHtml = `
                 <div class="dependency-list">
                     ${deps.map(d => {
                         const isMissing = missingDeps.includes(d);
@@ -464,17 +477,43 @@ export class InspectorDrawer {
             `;
         }
 
+        let dependentsHtml = '';
+        if (dependents.length === 0) {
+            dependentsHtml = `
+                <div class="drawer-empty-state-mini">
+                    <p>No active mods in current load order declare this pack as a direct prerequisite.</p>
+                </div>
+            `;
+        } else {
+            dependentsHtml = `
+                <div class="dependency-list">
+                    ${dependents.map(depName => `
+                        <div class="dependency-item dep-satisfied">
+                            <span class="dep-status-icon">↳</span>
+                            <span class="dep-name">${escapeHtml(depName)}</span>
+                            <span class="dep-status-label font-mono">Dependent Mod</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
         this.bodyEl.innerHTML = `
             <div class="drawer-dependencies">
                 <div class="drawer-section">
-                    <h4 class="drawer-section-title">Declared Pack Dependencies (${deps.length})</h4>
-                    ${depsHtml}
+                    <h4 class="drawer-section-title">Prerequisites (Requires ${deps.length})</h4>
+                    ${prereqsHtml}
                 </div>
 
                 <div class="drawer-section">
-                    <h4 class="drawer-section-title">Steam Workshop Links</h4>
+                    <h4 class="drawer-section-title">Dependents (Required By ${dependents.length} Active Mods)</h4>
+                    ${dependentsHtml}
+                </div>
+
+                <div class="drawer-section">
+                    <h4 class="drawer-section-title">Steam Community</h4>
                     <button type="button" class="btn btn-secondary" id="drawer-btn-steam" style="width: 100%;">
-                        🌐 Open Workshop Page ↗
+                        🌐 Open Steam Workshop Page ↗
                     </button>
                 </div>
             </div>

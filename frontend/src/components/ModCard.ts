@@ -66,6 +66,9 @@ export function createModCard(
     if (conflictData && conflictData.summaries) {
         const summary = conflictData.summaries[mod.name] || (mod.id ? conflictData.summaries[mod.id] : null);
         if (summary) {
+            if (summary.is_framework) {
+                conflictBadgesHtml += `<span class="conflict-badge badge-core" title="Core Framework: Foundational parent framework (e.g. Mixer, CBfM, MCT) loaded first.">📦 CORE</span>`;
+            }
             if (summary.fatal_startpos_count > 0) {
                 conflictBadgesHtml += `<span class="conflict-badge badge-fatal" title="Fatal Conflict: Alters startpos.esf. Multiple startpos mods active will cause campaign crashes.">❌ STARTPOS</span>`;
             }

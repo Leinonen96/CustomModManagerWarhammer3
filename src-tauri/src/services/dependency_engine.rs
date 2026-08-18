@@ -80,26 +80,47 @@ impl DependencyEngine {
             }
         }
 
-        // 2. Kahn's Algorithm for Topological Sorting
-        let mut queue: VecDeque<String> = VecDeque::new();
-        for (name, &deg) in &in_degree {
-            if deg == 0 {
-                queue.push_back(name.clone());
-            }
-        }
+        // 2. Kahn's Algorithm for Topological Sorting with Framework Priority
+        let is_framework_name = |n: &str| -> bool {
+            let l = n.to_lowercase();
+            l.contains("mixer")
+                || l.contains("unlocker")
+                || l.contains("community_bugfix")
+                || l.contains("cbfm")
+                || l.contains("mod_configuration_tool")
+                || l.contains("mct")
+                || l.contains("cai_framework")
+                || l.contains("ui_framework")
+        };
 
+        let mut ready_nodes: Vec<String> = in_degree
+            .iter()
+            .filter(|(_, &deg)| deg == 0)
+            .map(|(name, _)| name.clone())
+            .collect();
+
+        // Sort ready nodes: Core frameworks first, then original order
+        ready_nodes.sort_by_key(|n| if is_framework_name(n) { 0 } else { 1 });
+
+        let mut queue: VecDeque<String> = ready_nodes.into();
         let mut sorted_names: Vec<String> = Vec::new();
+
         while let Some(node) = queue.pop_front() {
             sorted_names.push(node.clone());
 
             if let Some(neighbors) = adj.get(&node) {
+                let mut newly_ready = Vec::new();
                 for nbr in neighbors {
                     if let Some(deg) = in_degree.get_mut(nbr) {
                         *deg -= 1;
                         if *deg == 0 {
-                            queue.push_back(nbr.clone());
+                            newly_ready.push(nbr.clone());
                         }
                     }
+                }
+                newly_ready.sort_by_key(|n| if is_framework_name(n) { 0 } else { 1 });
+                for nr in newly_ready {
+                    queue.push_back(nr);
                 }
             }
         }

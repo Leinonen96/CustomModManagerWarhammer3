@@ -62,7 +62,10 @@ export interface ModConflictSummary {
     db_collisions: number;
     conflicting_mod_names: string[];
     is_movie_pack: boolean;
+    is_framework?: boolean;
+    declared_dependencies?: string[];
     missing_dependencies: string[];
+    dependents?: string[];
 }
 
 export interface ConflictAnalysisResult {

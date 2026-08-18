@@ -109,6 +109,9 @@ export class ModListManager {
             }
 
             let badgesHtml = '';
+            if (summary.is_framework) {
+                badgesHtml += `<span class="conflict-badge badge-core" title="Core Framework: Foundational parent framework (e.g. Mixer, CBfM, MCT) loaded first.">📦 CORE</span>`;
+            }
             if (summary.fatal_startpos_count > 0) {
                 badgesHtml += `<span class="conflict-badge badge-fatal" title="Fatal Startpos Collision: ${summary.fatal_startpos_count} file(s)">❌ STARTPOS</span>`;
             }

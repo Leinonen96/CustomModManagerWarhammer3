@@ -216,6 +216,18 @@ impl PackParser {
         let mut file_map: HashMap<String, Vec<(usize, String, String, bool)>> = HashMap::new();
         let mut summaries: HashMap<String, ModConflictSummary> = HashMap::new();
 
+        // Maps for fast lookup
+        let mut name_to_id: HashMap<String, String> = HashMap::new();
+        let mut id_to_name: HashMap<String, String> = HashMap::new();
+        let mut mod_manifests: Vec<PackedFileManifest> = Vec::with_capacity(active_mods.len());
+
+        for m in active_mods {
+            if !m.id.is_empty() {
+                name_to_id.insert(m.name.clone(), m.id.clone());
+                id_to_name.insert(m.id.clone(), m.name.clone());
+            }
+        }
+
         // 1. Parse all active pack files using fast bulk index reading
         for (i, m) in active_mods.iter().enumerate() {
             let load_order_index = i + 1;
@@ -240,6 +252,18 @@ impl PackParser {
             };
 
             let is_movie = manifest.pack_type == PackType::Movie;
+            let name_lower = m.name.to_lowercase();
+            let title_lower = m.title.to_lowercase();
+            let is_framework = name_lower.contains("mixer")
+                || name_lower.contains("unlocker")
+                || name_lower.contains("community_bugfix")
+                || name_lower.contains("cbfm")
+                || name_lower.contains("mod_configuration_tool")
+                || name_lower.contains("mct")
+                || name_lower.contains("ui_framework")
+                || title_lower.contains("mixu's unlocker")
+                || title_lower.contains("community bugfix")
+                || title_lower.contains("mod configuration tool");
 
             summaries.insert(
                 m.name.clone(),
@@ -247,6 +271,8 @@ impl PackParser {
                     mod_name: m.name.clone(),
                     mod_id: m.id.clone(),
                     is_movie_pack: is_movie,
+                    is_framework,
+                    declared_dependencies: manifest.dependencies.clone(),
                     ..Default::default()
                 },
             );
@@ -256,6 +282,40 @@ impl PackParser {
                     .entry(file.clone())
                     .or_default()
                     .push((load_order_index, m.name.clone(), m.id.clone(), is_movie));
+            }
+
+            mod_manifests.push(manifest);
+        }
+
+        // 1b. Compute forward dependencies and reverse dependents
+        for (i, m) in active_mods.iter().enumerate() {
+            let manifest = &mod_manifests[i];
+            let mut missing = Vec::new();
+
+            for dep in &manifest.dependencies {
+                let matched_name = if summaries.contains_key(dep) {
+                    Some(dep.clone())
+                } else if let Some(n) = id_to_name.get(dep) {
+                    Some(n.clone())
+                } else {
+                    None
+                };
+
+                if let Some(target_name) = matched_name {
+                    if target_name != m.name {
+                        if let Some(target_summary) = summaries.get_mut(&target_name) {
+                            if !target_summary.dependents.contains(&m.name) {
+                                target_summary.dependents.push(m.name.clone());
+                            }
+                        }
+                    }
+                } else {
+                    missing.push(dep.clone());
+                }
+            }
+
+            if let Some(s) = summaries.get_mut(&m.name) {
+                s.missing_dependencies = missing;
             }
         }
 

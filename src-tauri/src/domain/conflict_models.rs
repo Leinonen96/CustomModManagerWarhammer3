@@ -62,7 +62,14 @@ pub struct ModConflictSummary {
     pub db_collisions: usize,
     pub conflicting_mod_names: Vec<String>,
     pub is_movie_pack: bool,
+    #[serde(default)]
+    pub is_framework: bool,
+    #[serde(default)]
+    pub declared_dependencies: Vec<String>,
+    #[serde(default)]
     pub missing_dependencies: Vec<String>,
+    #[serde(default)]
+    pub dependents: Vec<String>, // Reverse lookup: active mods that depend on this mod
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
