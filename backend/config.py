@@ -1,9 +1,15 @@
-import os
-import json
+"""
+Legacy configuration module for backwards compatibility.
+Delegates to ConfigStore in backend.infrastructure.
+"""
+from pathlib import Path
+from backend.domain.models import AppConfig
+from backend.infrastructure.config_store import ConfigStore, CONFIG_FILE as _CONFIG_FILE, PRESETS_DIR as _PRESETS_DIR
 
-CONFIG_FILE = "config.json"
-PRESET_DIR = "./presets"
-os.makedirs(PRESET_DIR, exist_ok=True)
+CONFIG_FILE = str(_CONFIG_FILE)
+PRESET_DIR = str(_PRESETS_DIR)
+
+_store = ConfigStore()
 
 DEFAULT_CONFIG = {
     "WORKSHOP_DIR": "C:/Program Files (x86)/Steam/steamapps/workshop/content/1142710",
@@ -12,14 +18,8 @@ DEFAULT_CONFIG = {
 }
 
 def load_config():
-    if not os.path.exists(CONFIG_FILE):
-        with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
-            json.dump(DEFAULT_CONFIG, f, indent=4)
-        return DEFAULT_CONFIG
-    
-    with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
-        return json.load(f)
+    config = _store.load()
+    return config.to_dict()
 
 def save_config(data):
-    with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
-        json.dump(data, f, indent=4)
+    _store.save(AppConfig.from_dict(data))

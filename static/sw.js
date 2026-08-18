@@ -1,32 +1,43 @@
-const CACHE_NAME = 'wh3-mod-manager-v1';
-const ASSETS_TO_CACHE = [
-    '/',
-    '/static/style.css',
-    '/static/main.js',
-    '/static/gemini-svg.svg',
-    'https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js'
-];
+// WH3 Mod Manager Service Worker (Auto-refresh cache)
+const CACHE_NAME = 'wh3-mod-manager-v2.0.1';
 
-// Install event: Cache our static shell
 self.addEventListener('install', (event) => {
+    self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll(ASSETS_TO_CACHE);
-        })
+        caches.keys().then((cacheNames) => {
+            return Promise.all(
+                cacheNames.map((name) => {
+                    if (name !== CACHE_NAME) {
+                        console.log('Purging old cache:', name);
+                        return caches.delete(name);
+                    }
+                })
+            );
+        }).then(() => self.clients.claim())
     );
 });
 
-// Fetch event: Serve static files from cache, but let API calls hit the network
+// Network-first strategy for local development / desktop app
 self.addEventListener('fetch', (event) => {
-    // We don't want to cache our dynamic local API routes
+    // API & dynamic assets always go straight to network
     if (event.request.url.includes('/api/') || event.request.url.includes('/workshop_assets/')) {
-        return; 
+        return;
     }
 
     event.respondWith(
-        caches.match(event.request).then((response) => {
-            // Return cached version if found, else fetch from network
-            return response || fetch(event.request);
-        })
+        fetch(event.request)
+            .then((response) => {
+                if (response && response.status === 200) {
+                    const responseClone = response.clone();
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(event.request, responseClone);
+                    });
+                }
+                return response;
+            })
+            .catch(() => caches.match(event.request))
     );
 });

@@ -2,103 +2,93 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Lightweight WH3 Mod Manager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Total War: WARHAMMER III Mod Manager</title>
     
-    <!-- External Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-    
-    <!-- Local Static Stylesheet -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Local Stylesheet with Cache Busting -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v={{ range(1000, 9999) | random }}">
 
     <!-- App Icon -->
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='gemini-png.png') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='gemini-svg.svg') }}">
 
     <!-- PWA Manifest & Theme -->
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#202024">
+    <meta name="theme-color" content="#0f1015">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 <body>
 
-    <!-- Settings Modal -->
-    <div id="settings-modal" class="modal-overlay">
-        <div class="modal">
-            <h2>⚙️ Mod Manager Settings</h2>
-            <p style="font-size: 0.9em; color: #a1a1aa;">Set the absolute paths for your system. These are saved locally.</p>
-            
-            <label>
-                Workshop Directory:
-                <span class="tooltip">ⓘ
-                    <span class="tooltip-text">Where Steam physically downloads the raw .pack files and images for your subscribed mods.</span>
-                </span>
-            </label>
-            <input type="text" id="config-workshop" placeholder="e.g., C:/Program Files (x86)/Steam/steamapps/workshop/content/1142710">
-            
-            <label>
-                Game Data Directory:
-                <span class="tooltip">ⓘ
-                    <span class="tooltip-text">The game's actual installation folder where the mod symlinks get placed.</span>
-                </span>
-            </label>
-            <input type="text" id="config-data" placeholder="e.g., C:/Program Files (x86)/Steam/steamapps/common/Total War WARHAMMER III/data">
-            
-            <label>
-                User Script File (.txt):
-                <span class="tooltip">ⓘ
-                    <span class="tooltip-text">The file (usually in AppData or a Proton prefix) that dictates the exact load order to the game engine.</span>
-                </span>
-            </label>
-            <input type="text" id="config-script" placeholder="e.g., C:/Users/Public/AppData/Roaming/The Creative Assembly/Warhammer3/scripts/user.script.txt">
-            
-            <div class="modal-buttons">
-                <button class="btn-red" id="close-modal-btn" onclick="closeSettings()">Cancel</button>
-                <button onclick="saveSettings()">Save & Reload</button>
-            </div>
+    <!-- Main Header Controls Bar -->
+    <header class="controls">
+        <div class="preset-group">
+            <label for="preset-select" class="visually-hidden">Presets</label>
+            <select id="preset-select" class="select-input">
+                <option value="">-- Select Preset --</option>
+            </select>
+            <button id="btn-load-preset" class="btn btn-secondary" title="Load active preset">📂 Load</button>
+            <button id="btn-delete-preset" class="btn btn-danger" title="Delete selected preset">🗑️</button>
         </div>
-    </div>
-
-    <!-- Main Controls Bar -->
-    <div class="controls">
-        <select id="preset-select">
-            <option value="">-- Select Preset --</option>
-        </select>
-        <button class="btn-blue" onclick="loadPreset()">Load Preset</button>
-        <button class="btn-red" onclick="deletePreset()">Delete Preset</button>
         
-        <div style="width: 20px;"></div> 
-        <input type="text" id="preset-name" placeholder="Name new preset...">
-        <button class="btn-blue" onclick="savePreset()">Save / Update Preset</button>
+        <div class="preset-save-group">
+            <input type="text" id="preset-name" placeholder="Preset name..." class="text-input">
+            <button id="btn-save-preset" class="btn btn-secondary" title="Save current load order as preset">💾 Save</button>
+        </div>
         
-        <div style="flex-grow: 1;"></div> 
-        <button class="btn-blue" onclick="openSettings()">⚙️ Settings</button>
-        <button onclick="applyLoadOrder()">APPLY TO GAME</button>
-    </div>
+        <div class="spacer"></div> 
+        
+        <div class="action-group">
+            <button id="btn-open-settings" class="btn btn-secondary" title="Open Settings">⚙️ Settings</button>
+            <button id="btn-apply-order" class="btn btn-primary" title="Apply active load order to Warhammer 3">
+                ⚡ APPLY TO GAME
+            </button>
+        </div>
+    </header>
 
     <!-- Mod Lists Container -->
-    <div class="container">
-        <div class="panel">
-            <h3 style="margin-top: 0;">Available Mods (Inactive)</h3>
-            <input type="text" id="search-inactive" class="search-bar" placeholder="Search available mods..." onkeyup="filterInactive()">
-            <div id="inactive-mods" class="mod-list"></div>
-        </div>
+    <main class="container">
+        <!-- Inactive Mods Panel -->
+        <section class="panel">
+            <div class="panel-header">
+                <div class="panel-title-row">
+                    <h3>Available Mods</h3>
+                    <span id="count-inactive" class="count-badge">0</span>
+                </div>
+                <input type="text" id="search-inactive" class="search-bar" placeholder="Search available mods (name, title, ID)...">
+            </div>
+            <div id="inactive-mods" class="mod-list" aria-label="Available Mods List"></div>
+        </section>
         
-        <div class="panel">
-            <h3 style="margin-top: 0;">Active Load Order (Top loads first)</h3>
-            <input type="text" id="search-active" class="search-bar" placeholder="Search active mods..." onkeyup="filterActive()">
-            <div id="active-mods" class="mod-list"></div>
-        </div>
+        <!-- Active Mods Panel -->
+        <section class="panel panel-active">
+            <div class="panel-header">
+                <div class="panel-title-row">
+                    <h3>Active Load Order <span class="sub-text">(Top loads first)</span></h3>
+                    <span id="count-active" class="count-badge count-badge-active">0</span>
+                </div>
+                <input type="text" id="search-active" class="search-bar" placeholder="Search active mods...">
+            </div>
+            <div id="active-mods" class="mod-list" aria-label="Active Load Order List"></div>
+        </section>
+    </main>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal-overlay" style="display: none;">
+        <div class="modal"></div>
     </div>
 
-    <!-- External JavaScript File -->
-    <script src="{{ url_for('static', filename='main.js') }}"></script>
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Application Script Bundle with Cache Busting -->
+    <script src="{{ url_for('static', filename='main.js') }}?v={{ range(1000, 9999) | random }}"></script>
 
     <script>
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(reg => console.log('Service Worker registered!', reg))
-                    .catch(err => console.error('Service Worker registration failed: ', err));
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+                for (let registration of registrations) {
+                    registration.update();
+                }
             });
         }
     </script>
