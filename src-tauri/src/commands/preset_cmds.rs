@@ -1,6 +1,6 @@
-use tauri::command;
 use crate::domain::{AppResult, Mod, PresetDetails};
 use crate::services::{ConfigStore, PresetRepository, WorkshopScanner};
+use tauri::command;
 
 #[command]
 pub fn list_presets() -> Vec<String> {

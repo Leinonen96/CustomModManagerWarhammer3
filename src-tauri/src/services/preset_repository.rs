@@ -1,6 +1,6 @@
+use crate::domain::{AppError, AppResult, Mod, PresetDetails};
 use std::fs;
 use std::path::PathBuf;
-use crate::domain::{AppError, AppResult, Mod, PresetDetails};
 
 pub struct PresetRepository {
     presets_dir: PathBuf,
@@ -18,7 +18,10 @@ impl PresetRepository {
         if let Ok(entries) = fs::read_dir(&self.presets_dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
-                if path.extension().map_or(false, |ext| ext.eq_ignore_ascii_case("json")) {
+                if path
+                    .extension()
+                    .map_or(false, |ext| ext.eq_ignore_ascii_case("json"))
+                {
                     if let Some(stem) = path.file_stem() {
                         list.push(stem.to_string_lossy().to_string());
                     }
@@ -32,7 +35,10 @@ impl PresetRepository {
     pub fn load_preset(&self, name: &str, available_mods: &[Mod]) -> AppResult<PresetDetails> {
         let file_path = self.presets_dir.join(format!("{}.json", name));
         if !file_path.exists() {
-            return Err(AppError::PathNotFound(format!("Preset '{}' not found", name)));
+            return Err(AppError::PathNotFound(format!(
+                "Preset '{}' not found",
+                name
+            )));
         }
 
         let content = fs::read_to_string(&file_path).unwrap_or_default();
@@ -61,7 +67,10 @@ impl PresetRepository {
             }
         };
 
-        let available_map: std::collections::HashMap<&str, &Mod> = available_mods.iter().map(|m| (m.name.as_str(), m)).collect();
+        let available_map: std::collections::HashMap<&str, &Mod> = available_mods
+            .iter()
+            .map(|m| (m.name.as_str(), m))
+            .collect();
 
         let mut matched_mods = Vec::new();
         let mut missing_mods = Vec::new();
@@ -84,7 +93,13 @@ impl PresetRepository {
     }
 
     pub fn save_preset(&self, name: &str, mods: &[Mod]) -> AppResult<()> {
-        let clean_name = name.replace(|c: char| !c.is_alphanumeric() && c != ' ' && c != '-' && c != '_', "").trim().to_string();
+        let clean_name = name
+            .replace(
+                |c: char| !c.is_alphanumeric() && c != ' ' && c != '-' && c != '_',
+                "",
+            )
+            .trim()
+            .to_string();
         if clean_name.is_empty() {
             return Err(AppError::Preset("Invalid preset name".to_string()));
         }

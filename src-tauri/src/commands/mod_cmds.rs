@@ -1,6 +1,6 @@
-use tauri::command;
 use crate::domain::{AppResult, Mod};
 use crate::services::{ConfigStore, WorkshopScanner};
+use tauri::command;
 
 #[command]
 pub fn get_mods() -> Vec<Mod> {
@@ -19,7 +19,9 @@ pub fn open_url(url: String) -> AppResult<()> {
     }
     #[cfg(windows)]
     {
-        let _ = std::process::Command::new("cmd").args(["/C", "start", "", &url]).spawn();
+        let _ = std::process::Command::new("cmd")
+            .args(["/C", "start", "", &url])
+            .spawn();
     }
     Ok(())
 }

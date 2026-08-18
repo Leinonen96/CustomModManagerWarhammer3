@@ -1,6 +1,6 @@
-use tauri::command;
 use crate::domain::{AppConfig, AppResult, ConfigValidationResult, PathDetectionResult};
 use crate::services::{auto_detect_wh3_paths, ConfigStore};
+use tauri::command;
 
 #[command]
 pub fn get_config() -> AppConfig {

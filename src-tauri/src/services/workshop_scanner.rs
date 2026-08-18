@@ -1,7 +1,7 @@
+use crate::domain::Mod;
+use regex::Regex;
 use std::fs;
 use std::path::{Path, PathBuf};
-use regex::Regex;
-use crate::domain::Mod;
 
 pub struct WorkshopScanner;
 
@@ -25,7 +25,11 @@ impl WorkshopScanner {
                 continue;
             }
 
-            let folder_name = folder_path.file_name().unwrap_or_default().to_string_lossy().to_string();
+            let folder_name = folder_path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
             let workshop_title = Self::extract_workshop_title(&folder_path);
 
             let sub_entries = match fs::read_dir(&folder_path) {
@@ -41,15 +45,22 @@ impl WorkshopScanner {
             let pack_files: Vec<&PathBuf> = files
                 .iter()
                 .filter(|p| {
-                    p.extension()
-                        .map_or(false, |ext| ext.to_string_lossy().eq_ignore_ascii_case("pack"))
+                    p.extension().map_or(false, |ext| {
+                        ext.to_string_lossy().eq_ignore_ascii_case("pack")
+                    })
                 })
                 .collect();
 
             for pack_path in pack_files {
-                let pack_name = pack_path.file_name().unwrap_or_default().to_string_lossy().to_string();
+                let pack_name = pack_path
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .to_string();
                 let thumb_path = Self::find_thumbnail_path(&files, &pack_name);
-                let thumb_str = thumb_path.map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
+                let thumb_str = thumb_path
+                    .map(|p| p.to_string_lossy().to_string())
+                    .unwrap_or_default();
 
                 let mut file_size = 0;
                 let mut mtime = 0.0;
@@ -71,7 +82,10 @@ impl WorkshopScanner {
                         .to_string()
                 });
 
-                let steam_url = format!("https://steamcommunity.com/sharedfiles/filedetails/?id={}", folder_name);
+                let steam_url = format!(
+                    "https://steamcommunity.com/sharedfiles/filedetails/?id={}",
+                    folder_name
+                );
 
                 let date_str = if mtime > 0.0 {
                     let days = (mtime as u64) / 86400;
@@ -113,8 +127,16 @@ impl WorkshopScanner {
                 let stem_str = stem.to_string_lossy().to_lowercase();
                 if let Some(ext) = file.extension() {
                     let ext_str = ext.to_string_lossy().to_lowercase();
-                    if ext_str == "png" || ext_str == "jpg" || ext_str == "jpeg" || ext_str == "webp" {
-                        if stem_str == base_stem || stem_str == "thumbnail" || stem_str == "thumb" || stem_str == "preview" {
+                    if ext_str == "png"
+                        || ext_str == "jpg"
+                        || ext_str == "jpeg"
+                        || ext_str == "webp"
+                    {
+                        if stem_str == base_stem
+                            || stem_str == "thumbnail"
+                            || stem_str == "thumb"
+                            || stem_str == "preview"
+                        {
                             return Some(file.clone());
                         }
                     }
@@ -165,4 +187,3 @@ fn format_days(days: u64) -> String {
 
     format!("{:04}-{:02}-{:02}", final_y, m, d)
 }
-

@@ -3,10 +3,10 @@ use std::collections::HashMap;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PackType {
-    Movie,    // Pack type 0: auto-loaded by game engine regardless of user.script.txt
-    Boot,     // Pack type 1
-    Release,  // Pack type 2: CA base game pack
-    Mod,      // Pack type 3: standard user mod
+    Movie,   // Pack type 0: auto-loaded by game engine regardless of user.script.txt
+    Boot,    // Pack type 1
+    Release, // Pack type 2: CA base game pack
+    Mod,     // Pack type 3: standard user mod
     Unknown(u32),
 }
 
@@ -42,10 +42,10 @@ pub struct PackedFileManifest {
 pub struct FileConflictDetail {
     pub internal_path: String,
     pub severity: ConflictSeverity,
-    pub winner_mod: String,       // Higher in load order (or Movie pack)
-    pub winner_index: usize,      // 1-based index
-    pub loser_mod: String,        // Lower in load order
-    pub loser_index: usize,       // 1-based index
+    pub winner_mod: String,  // Higher in load order (or Movie pack)
+    pub winner_index: usize, // 1-based index
+    pub loser_mod: String,   // Lower in load order
+    pub loser_index: usize,  // 1-based index
     pub is_identical_db_table: bool,
 }
 

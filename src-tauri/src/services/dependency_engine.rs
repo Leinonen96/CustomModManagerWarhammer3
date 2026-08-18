@@ -1,7 +1,7 @@
-use std::collections::{HashMap, HashSet, VecDeque};
-use std::path::Path;
 use crate::domain::Mod;
 use crate::services::pack_parser::PackParser;
+use std::collections::{HashMap, HashSet, VecDeque};
+use std::path::Path;
 
 pub struct DependencyEngine;
 
@@ -72,7 +72,9 @@ impl DependencyEngine {
                             || other_lower.contains("patch")
                             || other_lower.contains("compatch")
                         {
-                            adj.entry(m.name.clone()).or_default().push(other.name.clone());
+                            adj.entry(m.name.clone())
+                                .or_default()
+                                .push(other.name.clone());
                             *in_degree.entry(other.name.clone()).or_insert(0) += 1;
                         }
                     }
@@ -213,4 +215,3 @@ mod tests {
         assert_eq!(sorted[1].name, "submod_patch.pack");
     }
 }
-

@@ -1,6 +1,6 @@
+pub mod commands;
 pub mod domain;
 pub mod services;
-pub mod commands;
 
 use commands::*;
 

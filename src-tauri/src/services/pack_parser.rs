@@ -1,13 +1,13 @@
+use crate::domain::{
+    ConflictAnalysisResult, ConflictSeverity, FileConflictDetail, Mod, ModConflictSummary,
+    PackType, PackedFileManifest,
+};
 use std::collections::HashMap;
 use std::fs::{self, File};
 use std::io::{BufReader, Read};
 use std::path::Path;
 use std::sync::Mutex;
 use std::time::UNIX_EPOCH;
-use crate::domain::{
-    ConflictAnalysisResult, ConflictSeverity, FileConflictDetail, Mod, ModConflictSummary,
-    PackType, PackedFileManifest,
-};
 
 static MANIFEST_CACHE: Mutex<Option<HashMap<String, (u64, PackedFileManifest)>>> = Mutex::new(None);
 
@@ -99,9 +99,12 @@ impl PackParser {
         }
 
         let pack_type_val = u32::from_le_bytes(header_buf[0..4].try_into().unwrap_or_default());
-        let dep_count = u32::from_le_bytes(header_buf[4..8].try_into().unwrap_or_default()) as usize;
-        let index_size = u32::from_le_bytes(header_buf[8..12].try_into().unwrap_or_default()) as usize;
-        let file_count = u32::from_le_bytes(header_buf[16..20].try_into().unwrap_or_default()) as usize;
+        let dep_count =
+            u32::from_le_bytes(header_buf[4..8].try_into().unwrap_or_default()) as usize;
+        let index_size =
+            u32::from_le_bytes(header_buf[8..12].try_into().unwrap_or_default()) as usize;
+        let file_count =
+            u32::from_le_bytes(header_buf[16..20].try_into().unwrap_or_default()) as usize;
 
         manifest.header_bitmask_hex = format!("0x{:08X}", pack_type_val);
         manifest.pack_type = match pack_type_val & 0xF {
@@ -143,7 +146,8 @@ impl PackParser {
                 break;
             }
             if let Some(null_idx) = index_buf[cursor..].iter().position(|&b| b == 0) {
-                let dep_str = String::from_utf8_lossy(&index_buf[cursor..cursor + null_idx]).to_string();
+                let dep_str =
+                    String::from_utf8_lossy(&index_buf[cursor..cursor + null_idx]).to_string();
                 cursor += null_idx + 1;
                 if !dep_str.is_empty() {
                     manifest.dependencies.push(dep_str);
@@ -278,10 +282,12 @@ impl PackParser {
             );
 
             for file in &manifest.files {
-                file_map
-                    .entry(file.clone())
-                    .or_default()
-                    .push((load_order_index, m.name.clone(), m.id.clone(), is_movie));
+                file_map.entry(file.clone()).or_default().push((
+                    load_order_index,
+                    m.name.clone(),
+                    m.id.clone(),
+                    is_movie,
+                ));
             }
 
             mod_manifests.push(manifest);
@@ -427,7 +433,12 @@ impl PackParser {
     }
 }
 
-fn compute_fast_pack_hash(magic: &[u8; 4], header: &[u8; 20], index: &[u8], file_len: u64) -> String {
+fn compute_fast_pack_hash(
+    magic: &[u8; 4],
+    header: &[u8; 20],
+    index: &[u8],
+    file_len: u64,
+) -> String {
     let mut h1: u64 = 0xcbf29ce484222325;
     let mut h2: u64 = 0x100000001b3;
 

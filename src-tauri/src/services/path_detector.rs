@@ -1,6 +1,6 @@
-use std::path::{Path, PathBuf};
-use regex::Regex;
 use crate::domain::PathDetectionResult;
+use regex::Regex;
+use std::path::{Path, PathBuf};
 
 const WH3_APP_ID: &str = "1142710";
 
@@ -64,7 +64,11 @@ pub fn auto_detect_wh3_paths() -> PathDetectionResult {
 
     // 1. Find Game Data Dir
     for lib in &libraries {
-        let data_dir = lib.join("steamapps").join("common").join("Total War WARHAMMER III").join("data");
+        let data_dir = lib
+            .join("steamapps")
+            .join("common")
+            .join("Total War WARHAMMER III")
+            .join("data");
         if data_dir.is_dir() {
             result.game_data_dir = data_dir.to_string_lossy().to_string();
             break;
@@ -73,7 +77,11 @@ pub fn auto_detect_wh3_paths() -> PathDetectionResult {
 
     // 2. Find Workshop Dir
     for lib in &libraries {
-        let workshop_dir = lib.join("steamapps").join("workshop").join("content").join(WH3_APP_ID);
+        let workshop_dir = lib
+            .join("steamapps")
+            .join("workshop")
+            .join("content")
+            .join(WH3_APP_ID);
         if workshop_dir.is_dir() {
             result.workshop_dir = workshop_dir.to_string_lossy().to_string();
             break;

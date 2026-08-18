@@ -1,6 +1,6 @@
+use crate::domain::{AppError, AppResult, LoadOrderResult, Mod};
 use std::fs;
 use std::path::{Path, PathBuf};
-use crate::domain::{AppError, AppResult, LoadOrderResult, Mod};
 
 pub struct GameIntegrator;
 
@@ -13,7 +13,10 @@ impl GameIntegrator {
     ) -> AppResult<LoadOrderResult> {
         let data_path = Path::new(game_data_dir);
         if !data_path.is_dir() {
-            return Err(AppError::PathNotFound(format!("Game Data Directory: {}", game_data_dir)));
+            return Err(AppError::PathNotFound(format!(
+                "Game Data Directory: {}",
+                game_data_dir
+            )));
         }
 
         let script_path = Path::new(script_file);
@@ -78,7 +81,10 @@ impl GameIntegrator {
             cleaned_count,
             script_path: script_path.to_string_lossy().to_string(),
             backup_path: backup_path_str,
-            message: format!("Applied {} mods to game data and updated user.script.txt.", applied_count),
+            message: format!(
+                "Applied {} mods to game data and updated user.script.txt.",
+                applied_count
+            ),
         })
     }
 

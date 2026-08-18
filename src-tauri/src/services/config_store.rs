@@ -1,7 +1,7 @@
-use std::fs;
-use std::path::{Path, PathBuf};
 use crate::domain::{AppConfig, AppResult, ConfigValidationResult, PathValidationStatus};
 use crate::services::path_detector::auto_detect_wh3_paths;
+use std::fs;
+use std::path::{Path, PathBuf};
 
 pub struct ConfigStore {
     config_path: PathBuf,
