@@ -25,6 +25,10 @@ src-tauri/target/
 src-tauri/gen/
 **/*.rs.bk
 
+# User settings / Local data
+config.json
+*.local.json
+
 # OS generated files
 .DS_Store
 Thumbs.db
