@@ -1,0 +1,74 @@
+/**
+ * WH3 Mod Manager Design System - Animations & Dynamic Indicators
+ */
+
+/* Highlight pulse when a mod is spliced/injected */
+.mod-item-highlight {
+    animation: highlightPulse 1.6s ease-out;
+}
+
+@keyframes highlightPulse {
+    0% {
+        background: rgba(16, 185, 129, 0.35);
+        border-color: var(--accent-emerald);
+        box-shadow: 0 0 16px var(--accent-emerald-glow);
+        transform: scale(1.015);
+    }
+    100% {
+        background: var(--bg-card);
+        border-color: var(--border-subtle);
+        box-shadow: var(--shadow-card);
+        transform: scale(1);
+    }
+}
+
+/* Modal and overlay animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes modalPop {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.modal {
+    animation: modalPop 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-overlay {
+    animation: fadeIn 0.15s ease-out;
+}
+
+/* Dynamic Floating Zoom Level Indicator */
+#zoom-indicator {
+    position: fixed;
+    top: 50px;
+    right: 24px;
+    background: rgba(18, 21, 32, 0.92);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border-accent);
+    color: var(--accent-emerald);
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: var(--radius-pill);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+#zoom-indicator.visible {
+    opacity: 1;
+    transform: translateY(0);
+}

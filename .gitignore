@@ -4,10 +4,8 @@
 env/
 venv/
 ENV/
-env.bak/
-venv.bak/
 
-# Byte-compiled / optimized / DLL files
+# Python cache
 __pycache__/
 *.py[cod]
 *$py.class
@@ -18,18 +16,19 @@ __pycache__/
 *.swp
 *.swo
 
+# Node / Frontend
+node_modules/
+dist/
+
+# Rust / Tauri
+src-tauri/target/
+src-tauri/gen/
+**/*.rs.bk
+
+# User settings / Local data
+config.json
+*.local.json
+
 # OS generated files
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
-
-# User Data / App Data
-presets/
-
-# User Data / App Data
-presets/
-config.json

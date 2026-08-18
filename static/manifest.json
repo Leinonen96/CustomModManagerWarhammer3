@@ -1,0 +1,16 @@
+{
+  "name": "WH3 Mod Manager",
+  "short_name": "WH3 Mods",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#121214",
+  "theme_color": "#202024",
+  "icons": [
+    {
+      "src": "/static/gemini-png.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

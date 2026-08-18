@@ -1,31 +1,40 @@
 #!/bin/bash
 
-# Dynamically resolve the directory where this script is located
+# Dynamically resolve directory
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$DIR" || exit 1
 
-echo "Initializing WH3 Mod Manager..."
+echo "Initializing Total War: WARHAMMER III Native Mod Manager (Tauri v2)..."
+
+# Fix WebKitGTK Wayland DMA-BUF issue on NVIDIA/Linux compositors
+export WEBKIT_DISABLE_DMABUF_RENDERER=1
 
 # Auto-Install Desktop Shortcut
 SHORTCUT_PATH="$HOME/.local/share/applications/wh3-mod-manager.desktop"
 if [ ! -f "$SHORTCUT_PATH" ]; then
-    echo "First run on Linux detected. Generating desktop shortcut..."
+    echo "Generating desktop shortcut..."
     bash "$DIR/install_shortcut.sh"
 fi
 
-# Create a local virtual environment if it doesn't exist
-if [ ! -d "venv" ]; then
-    echo "Creating Python virtual environment..."
-    python3 -m venv venv
+BIN=""
+if [ -f "$DIR/src-tauri/target/release/wh3-mod-manager" ]; then
+    BIN="$DIR/src-tauri/target/release/wh3-mod-manager"
+elif [ -f "$DIR/src-tauri/target/debug/wh3-mod-manager" ]; then
+    BIN="$DIR/src-tauri/target/debug/wh3-mod-manager"
 fi
 
-# Activate the virtual environment
-source venv/bin/activate
+if [ -n "$BIN" ]; then
+    # Try running directly
+    "$BIN" "$@"
+    EXIT_CODE=$?
 
-# Ensure dependencies are installed
-echo "Checking requirements..."
-pip install -r requirements.txt -q
-
-# Run the backend server
-echo "Starting application..."
-python3 app.py
+    # If it failed due to a Wayland protocol error, retry automatically under X11/Xwayland backend
+    if [ $EXIT_CODE -ne 0 ]; then
+        echo "Retrying with GDK_BACKEND=x11 compatibility mode..."
+        GDK_BACKEND=x11 WEBKIT_DISABLE_DMABUF_RENDERER=1 "$BIN" "$@"
+    fi
+else
+    echo "Building native binary..."
+    npm run build
+    cd "$DIR/src-tauri" && cargo run
+fi

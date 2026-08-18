@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Total War: WARHAMMER III Mod Manager</title>
+
+    <!-- App Icon -->
+    <link rel="icon" type="image/svg+xml" href="/static/gemini-svg.svg">
+    <meta name="theme-color" content="#08090D">
+</head>
+<body>
+
+    <!-- Main Scalable Workspace Area (Titlebar stays fixed above) -->
+    <div id="app-workspace" class="app-workspace">
+        <!-- Main Header Controls Bar -->
+        <header class="controls">
+            <div class="preset-group">
+                <div id="preset-select-container"></div>
+                <button id="btn-load-preset" class="btn btn-secondary" title="Load active preset">📂 Load</button>
+                <button id="btn-delete-preset" class="btn btn-danger" title="Delete selected preset">🗑️</button>
+            </div>
+            
+            <div class="preset-save-group">
+                <input type="text" id="preset-name" placeholder="Preset name..." class="text-input">
+                <button id="btn-save-preset" class="btn btn-secondary" title="Save current load order as preset">💾 Save</button>
+            </div>
+            
+            <div class="spacer"></div> 
+            
+            <div class="action-group">
+                <button id="btn-auto-sort" class="btn btn-secondary" title="Auto-sort active load order by dependencies">⚡ Auto-Sort</button>
+                <button id="btn-toggle-inspector" class="btn btn-secondary" title="Toggle Conflict Inspector Drawer">🔍 Inspector</button>
+                <button id="btn-open-settings" class="btn btn-secondary" title="Open Settings">⚙️ Settings</button>
+                <button id="btn-apply-order" class="btn btn-primary" title="Apply active load order to Warhammer 3">
+                    ⚡ APPLY TO GAME
+                </button>
+            </div>
+        </header>
+
+        <!-- Mod Lists Container -->
+        <main class="container">
+            <!-- Inactive Mods Panel -->
+            <section class="panel">
+                <div class="panel-header">
+                    <div class="panel-title-row">
+                        <h3>Available Mods</h3>
+                        <span id="count-inactive" class="count-badge">0</span>
+                    </div>
+                    <input type="text" id="search-inactive" class="search-bar" placeholder="Search available mods (name, title, ID)...">
+                </div>
+                <div id="inactive-mods" class="mod-list" aria-label="Available Mods List"></div>
+            </section>
+            
+            <!-- Active Mods Panel -->
+            <section class="panel panel-active">
+                <div class="panel-header">
+                    <div class="panel-title-row">
+                        <h3>Active Load Order <span class="sub-text">(Top loads first)</span></h3>
+                        <span id="count-active" class="count-badge count-badge-active">0</span>
+                    </div>
+                    <input type="text" id="search-active" class="search-bar" placeholder="Search active mods...">
+                </div>
+                <div id="active-mods" class="mod-list" aria-label="Active Load Order List"></div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal-overlay" style="display: none;">
+        <div class="modal"></div>
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Application Script Entry Point -->
+    <script type="module" src="/frontend/src/main.ts"></script>
+</body>
+</html>

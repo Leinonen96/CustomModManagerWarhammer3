@@ -4,23 +4,20 @@ TITLE WH3 Mod Manager
 :: Dynamically change directory to where the batch file is located
 cd /d "%~dp0"
 
-echo Initializing WH3 Mod Manager...
+echo Initializing WH3 Mod Manager (Tauri v2 Native)...
 
-:: Create a local virtual environment if it doesn't exist
-if not exist "venv\" (
-    echo First run detected. Creating Python virtual environment...
-    python -m venv venv
+if exist "src-tauri\target\release\wh3-mod-manager.exe" (
+    start "" "src-tauri\target\release\wh3-mod-manager.exe"
+    exit /b 0
 )
 
-:: Activate the virtual environment
-call venv\Scripts\activate.bat
+if exist "src-tauri\target\debug\wh3-mod-manager.exe" (
+    start "" "src-tauri\target\debug\wh3-mod-manager.exe"
+    exit /b 0
+)
 
-:: Ensure dependencies are installed
-echo Checking requirements...
-pip install -r requirements.txt -q
-
-:: Run the backend server
-echo Starting application...
-python app.py
-
+echo Building native app...
+call npm run build
+cd src-tauri
+cargo run
 pause
