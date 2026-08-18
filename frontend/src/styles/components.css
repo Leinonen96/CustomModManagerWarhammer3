@@ -541,7 +541,39 @@
     border-left: 3px solid var(--color-primary);
 }
 
-.toast-success { border-left-color: var(--color-primary); }
-.toast-error { border-left-color: var(--color-danger); }
-.toast-warning { border-left-color: var(--color-amber); }
-.toast-info { border-left-color: var(--color-cyan); }
+.toast-success { 
+    background: #08281d; 
+    border: 1px solid var(--color-primary);
+    border-left: 4px solid var(--color-primary);
+    color: #f3f4f6;
+    font-weight: 600;
+}
+
+.toast-success .toast-icon {
+    color: var(--color-primary);
+    font-size: 1.15rem;
+    font-weight: 800;
+}
+
+.toast-error { 
+    background: #260c0c;
+    border-left-color: var(--color-danger); 
+}
+
+.toast-warning { 
+    background: #261b0c;
+    border-left-color: var(--color-amber); 
+}
+
+.toast-info { 
+    background: #0a1f2c;
+    border-left-color: var(--color-cyan); 
+}
+
+/* Button Success Flash */
+.btn-apply-success {
+    background: #059669 !important;
+    border-color: #34d399 !important;
+    color: #ffffff !important;
+    transition: all 0.15s ease;
+}

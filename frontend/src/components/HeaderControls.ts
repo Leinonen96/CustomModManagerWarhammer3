@@ -223,15 +223,24 @@ export class HeaderControls {
         const activeMods = store.getActiveMods();
         
         this.applyBtn.disabled = true;
-        const originalText = this.applyBtn.innerText;
+        const originalText = '⚡ APPLY TO GAME';
         this.applyBtn.innerHTML = '⚡ Applying...';
 
         try {
             const res = await applyLoadOrder(activeMods);
-            Toast.success(res.message || `Applied ${activeMods.length} mods to game!`);
+            Toast.success(res.message || `✓ Applied ${activeMods.length} mods to Total War: WARHAMMER III!`, 5000);
+            
+            // Visual green button success confirmation
+            this.applyBtn.classList.add('btn-apply-success');
+            this.applyBtn.innerHTML = `✓ APPLIED (${activeMods.length} MODS)!`;
+
+            setTimeout(() => {
+                this.applyBtn.classList.remove('btn-apply-success');
+                this.applyBtn.innerText = originalText;
+                this.applyBtn.disabled = false;
+            }, 2400);
         } catch (err: any) {
             Toast.error(`Failed to apply load order: ${err.message}`);
-        } finally {
             this.applyBtn.disabled = false;
             this.applyBtn.innerText = originalText;
         }
