@@ -23,6 +23,8 @@ export interface AppConfig {
     SCRIPT_FILE?: string;
     auto_backup?: boolean;
     theme?: string;
+    last_preset?: string;
+    ui_scale?: number;
 }
 
 export interface PathValidationStatus {
@@ -52,6 +54,7 @@ export interface PathDetectionResult {
 
 export interface PresetDetails {
     name: string;
+    description?: string;
     mods: Mod[];
     missing_mods: string[];
 }

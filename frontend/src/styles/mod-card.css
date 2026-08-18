@@ -1,0 +1,248 @@
+/**
+ * WH3 Mod Manager Design System - Studio Mod Item Card & Action Buttons
+ */
+
+.mod-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    background: var(--bg-card);
+    border-radius: var(--radius-sm);
+    cursor: grab;
+    border: 1px solid var(--border-subtle);
+    box-shadow: var(--shadow-card);
+    contain: layout style paint;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 74px;
+    transform: translateZ(0);
+    transition: border-color 0.12s, background 0.12s, transform 0.1s;
+}
+
+.mod-item:hover {
+    border-color: var(--border-medium);
+    background: var(--bg-card-hover);
+    box-shadow: var(--shadow-card-hover);
+}
+
+.mod-item:active {
+    cursor: grabbing;
+}
+
+/* Dragging styles */
+.sortable-ghost {
+    opacity: 0.35;
+    border: 1px dashed var(--accent-emerald) !important;
+}
+
+.sortable-chosen {
+    background: var(--bg-card-active);
+}
+
+.sortable-drag {
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.7);
+    border-color: var(--accent-emerald);
+}
+
+/* Order number badge */
+.order-num {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    width: 36px;
+    text-align: center;
+    flex-shrink: 0;
+    user-select: none;
+    transition: all 0.15s;
+}
+
+.order-active {
+    color: var(--accent-emerald);
+    text-shadow: 0 0 8px var(--accent-emerald-glow);
+}
+
+.order-editable {
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    padding: 2px;
+}
+
+.order-editable:hover {
+    background: var(--accent-emerald-subtle);
+    outline: 1px dashed var(--accent-emerald);
+}
+
+.order-input {
+    width: 38px;
+    padding: 2px 0;
+    text-align: center;
+    font-size: 0.95rem;
+    font-weight: 700;
+    background: var(--bg-surface);
+    color: var(--accent-emerald);
+    border: 1px solid var(--accent-emerald);
+    border-radius: 4px;
+    outline: none;
+}
+
+/* Mod thumbnail */
+.mod-thumb-container {
+    width: 52px;
+    height: 52px;
+    flex-shrink: 0;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: #0F121C;
+    border: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mod-thumb {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.fallback-thumb {
+    width: 30px;
+    height: 30px;
+    opacity: 0.6;
+}
+
+/* Mod metadata */
+.mod-info {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.mod-name-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.mod-title {
+    font-weight: 600;
+    font-size: 0.94rem;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: -0.01em;
+}
+
+.mod-size-badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.mod-filename {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 1px;
+}
+
+.mod-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-top: 3px;
+}
+
+.meta-dot {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+}
+
+.steam-link {
+    color: var(--accent-cyan);
+    text-decoration: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.12s, text-decoration 0.12s;
+}
+
+.steam-link:hover {
+    color: #7DD3FC;
+    text-decoration: underline;
+}
+
+/* --- QUICK ACTION BUTTONS ON MOD CARDS --- */
+.mod-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.15s ease-in-out;
+    flex-shrink: 0;
+}
+
+.mod-item:hover .mod-actions {
+    opacity: 1;
+}
+
+.card-action-btn {
+    background: var(--bg-surface-elevated);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-medium);
+    border-radius: 4px;
+    padding: 4px 7px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    line-height: 1;
+    transition: all 0.12s;
+    outline: none;
+}
+
+.card-action-btn:hover {
+    background: var(--bg-card-hover);
+    color: var(--text-primary);
+    border-color: var(--border-focus);
+}
+
+.btn-action-add:hover {
+    background: var(--accent-emerald);
+    color: #000;
+    border-color: var(--accent-emerald);
+}
+
+.btn-action-top:hover,
+.btn-action-add-top:hover {
+    background: var(--accent-cyan);
+    color: #000;
+    border-color: var(--accent-cyan);
+}
+
+.btn-action-inject {
+    color: var(--accent-cyan);
+    border-color: var(--accent-cyan-subtle);
+}
+
+.btn-action-inject:hover {
+    background: #0284C7;
+    color: #FFF;
+    border-color: #0284C7;
+}
+
+.btn-action-remove:hover {
+    background: var(--accent-crimson);
+    color: #FFF;
+    border-color: var(--accent-crimson);
+}

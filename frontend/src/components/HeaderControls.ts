@@ -4,6 +4,7 @@
 import { store } from '../state/store';
 import { fetchPresetsList, fetchPresetDetails, savePreset, deletePreset } from '../api/presetApi';
 import { applyLoadOrder } from '../api/loadOrderApi';
+import { saveConfig } from '../api/configApi';
 import { SettingsModal } from './SettingsModal';
 import { Toast } from './Toast';
 import { showConfirmDialog } from './Modal';
@@ -81,17 +82,13 @@ export class HeaderControls {
         });
     }
 
-    private async handleLoadPreset(): Promise<void> {
-        const name = this.presetSelect.value;
-        if (!name) {
-            Toast.info('Please select a preset from the dropdown to load.');
-            return;
-        }
+    public async loadPresetByName(name: string, silent = false): Promise<boolean> {
+        if (!name) return false;
 
         try {
             const res = await fetchPresetDetails(name);
             const data = res.data;
-            if (!data) return;
+            if (!data) return false;
 
             const allMods = store.getAllMods();
             const nameMap = new Map(allMods.map(m => [m.name, m]));
@@ -102,16 +99,38 @@ export class HeaderControls {
             });
 
             store.setActiveMods(loadedActiveMods);
+            store.setSelectedPreset(name);
             this.presetNameInput.value = name;
+            this.presetSelect.value = name;
 
-            if (data.missing_mods && data.missing_mods.length > 0) {
-                Toast.warning(`Loaded preset '${name}', but ${data.missing_mods.length} mod(s) are missing from your workshop.`);
-            } else {
-                Toast.success(`Preset '${name}' loaded successfully! (${loadedActiveMods.length} mods)`);
+            // Persist as last preset
+            const config = store.getConfig();
+            if (config) {
+                config.last_preset = name;
+                saveConfig(config).catch(() => {});
             }
+
+            if (!silent) {
+                if (data.missing_mods && data.missing_mods.length > 0) {
+                    Toast.warning(`Loaded preset '${name}', but ${data.missing_mods.length} mod(s) are missing from your workshop.`);
+                } else {
+                    Toast.success(`Preset '${name}' loaded successfully! (${loadedActiveMods.length} mods)`);
+                }
+            }
+            return true;
         } catch (err: any) {
-            Toast.error(`Failed to load preset: ${err.message}`);
+            if (!silent) Toast.error(`Failed to load preset: ${err.message}`);
+            return false;
         }
+    }
+
+    private async handleLoadPreset(): Promise<void> {
+        const name = this.presetSelect.value;
+        if (!name) {
+            Toast.info('Please select a preset from the dropdown to load.');
+            return;
+        }
+        await this.loadPresetByName(name, false);
     }
 
     private async handleSavePreset(): Promise<void> {
@@ -128,6 +147,13 @@ export class HeaderControls {
             Toast.success(`Preset '${name}' saved with ${activeMods.length} mods!`);
             await this.refreshPresets();
             store.setSelectedPreset(name);
+
+            // Persist as last preset
+            const config = store.getConfig();
+            if (config) {
+                config.last_preset = name;
+                saveConfig(config).catch(() => {});
+            }
         } catch (err: any) {
             Toast.error(`Failed to save preset: ${err.message}`);
         }
@@ -155,6 +181,12 @@ export class HeaderControls {
             store.setSelectedPreset('');
             this.presetNameInput.value = '';
             await this.refreshPresets();
+
+            const config = store.getConfig();
+            if (config && config.last_preset === name) {
+                config.last_preset = undefined;
+                saveConfig(config).catch(() => {});
+            }
         } catch (err: any) {
             Toast.error(`Failed to delete preset: ${err.message}`);
         }
@@ -165,7 +197,7 @@ export class HeaderControls {
         
         this.applyBtn.disabled = true;
         const originalText = this.applyBtn.innerText;
-        this.applyBtn.innerHTML = '<span class="spinner"></span> Applying...';
+        this.applyBtn.innerHTML = '⚡ Applying...';
 
         try {
             const res = await applyLoadOrder(activeMods);

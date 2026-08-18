@@ -13,12 +13,13 @@
     "windows": [
       {
         "title": "Total War: WARHAMMER III Mod Manager",
-        "width": 1280,
-        "height": 840,
-        "minWidth": 960,
-        "minHeight": 640,
+        "width": 1320,
+        "height": 860,
+        "minWidth": 980,
+        "minHeight": 660,
         "center": true,
         "resizable": true,
+        "decorations": false,
         "theme": "Dark"
       }
     ],

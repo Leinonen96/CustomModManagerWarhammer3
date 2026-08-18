@@ -30,6 +30,10 @@ pub struct AppConfig {
     pub auto_backup: bool,
     #[serde(default = "default_theme")]
     pub theme: String,
+    #[serde(default)]
+    pub last_preset: Option<String>,
+    #[serde(default)]
+    pub ui_scale: Option<f64>,
 }
 
 fn default_auto_backup() -> bool {
@@ -48,6 +52,8 @@ impl Default for AppConfig {
             script_file: String::new(),
             auto_backup: true,
             theme: "dark".to_string(),
+            last_preset: None,
+            ui_scale: Some(1.0),
         }
     }
 }

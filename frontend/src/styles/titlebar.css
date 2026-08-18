@@ -1,0 +1,91 @@
+/**
+ * WH3 Mod Manager Design System - Custom Native Titlebar (Frameless)
+ */
+.titlebar {
+    height: var(--titlebar-height);
+    background: var(--bg-base);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-subtle);
+    user-select: none;
+    -webkit-app-region: drag;
+    flex-shrink: 0;
+    z-index: 999;
+}
+
+.titlebar-drag-region {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-left: 14px;
+    flex-grow: 1;
+    height: 100%;
+}
+
+.titlebar-icon {
+    width: 18px;
+    height: 18px;
+    filter: drop-shadow(0 0 4px var(--accent-emerald-glow));
+    pointer-events: none;
+}
+
+.titlebar-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    pointer-events: none;
+}
+
+.titlebar-badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    background: var(--bg-surface-elevated);
+    color: var(--accent-emerald);
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border-subtle);
+    pointer-events: none;
+    margin-left: 6px;
+}
+
+/* Window Action Controls (Minimize, Maximize, Close) */
+.titlebar-controls {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    -webkit-app-region: no-drag;
+}
+
+.titlebar-btn {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 44px;
+    height: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+    outline: none;
+}
+
+.titlebar-btn:hover {
+    background: var(--bg-surface-elevated);
+    color: var(--text-primary);
+}
+
+.titlebar-btn.btn-close:hover {
+    background: #E11D48;
+    color: #FFFFFF;
+}
+
+.titlebar-btn svg {
+    width: 12px;
+    height: 12px;
+    fill: currentColor;
+}

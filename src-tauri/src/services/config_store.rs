@@ -22,6 +22,8 @@ impl ConfigStore {
                 script_file: detected.script_file,
                 auto_backup: true,
                 theme: "dark".to_string(),
+                last_preset: None,
+                ui_scale: Some(1.0),
             };
             let _ = self.save(&config);
             return config;

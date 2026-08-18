@@ -1,9 +1,12 @@
 /**
  * Main application entry point for Warhammer 3 Mod Manager (Tauri v2).
  */
+import './styles/main.css';
 import { store } from './state/store';
 import { fetchConfig } from './api/configApi';
 import { fetchMods } from './api/modApi';
+import { TitleBar } from './components/TitleBar';
+import { ZoomController } from './controllers/ZoomController';
 import { SettingsModal } from './components/SettingsModal';
 import { ModListManager } from './components/ModList';
 import { HeaderControls } from './components/HeaderControls';
@@ -11,12 +14,18 @@ import { SearchController } from './components/SearchBar';
 import { Toast } from './components/Toast';
 
 class App {
+    private titleBar!: TitleBar;
+    private zoomController!: ZoomController;
     private settingsModal!: SettingsModal;
     private modListManager!: ModListManager;
     private headerControls!: HeaderControls;
     private searchController!: SearchController;
 
     public async init(): Promise<void> {
+        // Initialize frameless window titlebar & zoom controller
+        this.titleBar = new TitleBar();
+        this.zoomController = new ZoomController();
+
         this.settingsModal = new SettingsModal();
         this.headerControls = new HeaderControls(this.settingsModal);
         this.modListManager = new ModListManager('inactive-mods', 'active-mods');
@@ -25,6 +34,11 @@ class App {
         try {
             const config = await fetchConfig();
             store.setConfig(config);
+
+            // Apply persisted zoom scale
+            if (config.ui_scale) {
+                this.zoomController.setScale(config.ui_scale, false);
+            }
 
             const isConfigured = Boolean(
                 (config.workshop_dir || config.WORKSHOP_DIR) &&
@@ -42,8 +56,21 @@ class App {
             const mods = await fetchMods();
             store.setAllMods(mods);
 
-            // Load presets
+            // Load presets list
             await this.headerControls.refreshPresets();
+
+            // Auto-load last preset or default preset
+            const presets = store.getPresets();
+            const lastPreset = config.last_preset;
+
+            if (lastPreset && presets.includes(lastPreset)) {
+                await this.headerControls.loadPresetByName(lastPreset, true);
+                Toast.info(`Restored preset: ${lastPreset}`);
+            } else if (presets.includes('default')) {
+                await this.headerControls.loadPresetByName('default', true);
+            } else if (presets.length > 0) {
+                await this.headerControls.loadPresetByName(presets[0], true);
+            }
 
             if (mods.length === 0) {
                 Toast.warning('No mods found in the configured workshop directory. Check Settings.');
