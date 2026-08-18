@@ -160,11 +160,7 @@ mod tests {
             name: "test.pack".into(),
             title: "Test".into(),
             real_path: "/dummy/test.pack".into(),
-            thumb: "".into(),
-            url: "".into(),
-            file_size_bytes: 100,
-            is_movie_pack: false,
-            last_modified: 0.0,
+            ..Default::default()
         }];
         let sorted = DependencyEngine::auto_sort_dependencies(&single);
         assert_eq!(sorted.len(), 1);
@@ -179,22 +175,14 @@ mod tests {
                 name: "submod_patch.pack".into(),
                 title: "Submod".into(),
                 real_path: "/dummy/submod.pack".into(),
-                thumb: "".into(),
-                url: "".into(),
-                file_size_bytes: 100,
-                is_movie_pack: false,
-                last_modified: 0.0,
+                ..Default::default()
             },
             Mod {
                 id: "1".into(),
                 name: "!mixer_core.pack".into(),
                 title: "Mixer Core".into(),
                 real_path: "/dummy/mixer.pack".into(),
-                thumb: "".into(),
-                url: "".into(),
-                file_size_bytes: 100,
-                is_movie_pack: false,
-                last_modified: 0.0,
+                ..Default::default()
             },
         ];
 

@@ -37,6 +37,11 @@ export function createModCard(
         ? (mod.file_size_bytes / (1024 * 1024)).toFixed(1) + ' MB'
         : '';
 
+    const isWorkshop = (mod.source_type || 'Workshop').toLowerCase() === 'workshop' || Boolean(mod.id && mod.id.length > 5);
+    const sourceBadge = isWorkshop
+        ? `<span class="source-badge badge-ws" title="Steam Workshop Subscribed Mod">WS</span>`
+        : `<span class="source-badge badge-local" title="Local Game /data Mod">LOCAL</span>`;
+
     // Fast image conversion via Tauri protocol
     let finalThumbSrc = '/static/gemini-svg.svg';
     if (mod.thumb) {
@@ -55,28 +60,28 @@ export function createModCard(
     const orderClass = isOrderActive ? 'order-num order-active order-editable' : 'order-num';
     const orderText = isOrderActive ? orderNumber.toString() : '-';
 
-    // Conflict badges
+    // Conflict badges with rich micro-tooltips
     let conflictBadgesHtml = '';
     const conflictData = store.getConflictAnalysis();
     if (conflictData && conflictData.summaries) {
         const summary = conflictData.summaries[mod.name] || (mod.id ? conflictData.summaries[mod.id] : null);
         if (summary) {
             if (summary.fatal_startpos_count > 0) {
-                conflictBadgesHtml += `<span class="conflict-badge badge-fatal" title="Fatal Startpos Collision: ${summary.fatal_startpos_count} file(s)">❌ STARTPOS</span>`;
+                conflictBadgesHtml += `<span class="conflict-badge badge-fatal" title="Fatal Conflict: Alters startpos.esf. Multiple startpos mods active will cause campaign crashes.">❌ STARTPOS</span>`;
             }
             const won = summary.script_overrides_won + summary.ui_overrides_won;
             if (won > 0) {
-                conflictBadgesHtml += `<span class="conflict-badge badge-won" title="Overrides ${won} script/UI file(s) in lower mods">▲ ${won}</span>`;
+                conflictBadgesHtml += `<span class="conflict-badge badge-won" title="Winning Override: Overwrites ${won} file(s) in lower-priority active mods.">▲ ${won}</span>`;
             }
             const lost = summary.script_overrides_lost + summary.ui_overrides_lost;
             if (lost > 0) {
-                conflictBadgesHtml += `<span class="conflict-badge badge-lost" title="Overridden by higher mods in ${lost} script/UI file(s)">▼ ${lost}</span>`;
+                conflictBadgesHtml += `<span class="conflict-badge badge-lost" title="Overridden: ${lost} file(s) in this mod are overwritten by higher-priority active mods.">▼ ${lost}</span>`;
             }
             if (summary.is_movie_pack || mod.is_movie_pack) {
-                conflictBadgesHtml += `<span class="conflict-badge badge-movie" title="Movie Pack: Auto-loaded first by engine">🎬 MOVIE</span>`;
+                conflictBadgesHtml += `<span class="conflict-badge badge-movie" title="Movie Pack: Auto-loaded first by the game engine directly from /data (bypasses user script).">🎬 MOVIE</span>`;
             }
             if (summary.missing_dependencies && summary.missing_dependencies.length > 0) {
-                conflictBadgesHtml += `<span class="conflict-badge badge-dep" title="Missing ${summary.missing_dependencies.length} prerequisite mod(s)">⚠️ DEP</span>`;
+                conflictBadgesHtml += `<span class="conflict-badge badge-dep" title="Missing Dependency: Requires ${summary.missing_dependencies.length} prerequisite mod(s) not in active load order.">⚠️ DEP</span>`;
             }
         }
     }
@@ -112,7 +117,10 @@ export function createModCard(
         <div class="mod-info">
             <div class="mod-name-row">
                 <span class="mod-title" title="${escapeHtml(mod.title || mod.name)}">${escapeHtml(mod.title || mod.name)}</span>
-                ${sizeMb ? `<span class="mod-size-badge">${sizeMb}</span>` : ''}
+                <div class="mod-badge-cluster">
+                    ${sourceBadge}
+                    ${sizeMb ? `<span class="mod-size-badge">${sizeMb}</span>` : ''}
+                </div>
             </div>
             <span class="mod-filename" title="${escapeHtml(mod.name)}">${escapeHtml(mod.name)}</span>
             <div class="mod-meta">

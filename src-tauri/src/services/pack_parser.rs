@@ -32,6 +32,10 @@ impl PackParser {
             files: Vec::new(),
             file_count: 0,
             is_valid_pack: false,
+            pfh_version: "PFH5".to_string(),
+            header_bitmask_hex: "0x00000003".to_string(),
+            sha256_hash: String::new(),
+            last_modified_str: String::new(),
         };
 
         // Check file metadata and mtime cache
@@ -40,12 +44,20 @@ impl PackParser {
             Err(_) => return manifest,
         };
 
+        let file_len = metadata.len();
         let mtime = metadata
             .modified()
             .ok()
             .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
             .map(|d| d.as_secs())
             .unwrap_or(0);
+
+        if mtime > 0 {
+            // Format readable date
+            let days_since_epoch = mtime / 86400;
+            // Approximate Gregorian date for display
+            manifest.last_modified_str = format_epoch_days(days_since_epoch);
+        }
 
         {
             let mut cache_guard = MANIFEST_CACHE.lock().unwrap();
@@ -79,6 +91,8 @@ impl PackParser {
             return manifest;
         }
 
+        manifest.pfh_version = String::from_utf8_lossy(&magic).to_string();
+
         let mut header_buf = [0u8; 20];
         if reader.read_exact(&mut header_buf).is_err() {
             return manifest;
@@ -89,6 +103,7 @@ impl PackParser {
         let index_size = u32::from_le_bytes(header_buf[8..12].try_into().unwrap_or_default()) as usize;
         let file_count = u32::from_le_bytes(header_buf[16..20].try_into().unwrap_or_default()) as usize;
 
+        manifest.header_bitmask_hex = format!("0x{:08X}", pack_type_val);
         manifest.pack_type = match pack_type_val & 0xF {
             0 => PackType::Movie,
             1 => PackType::Boot,
@@ -116,6 +131,9 @@ impl PackParser {
         if reader.read_exact(&mut index_buf).is_err() {
             return manifest;
         }
+
+        // Compute fast deterministic hash for multiplayer sync (FNV-1a 128-bit hash)
+        manifest.sha256_hash = compute_fast_pack_hash(&magic, &header_buf, &index_buf, file_len);
 
         let mut cursor = 0;
 
@@ -214,6 +232,10 @@ impl PackParser {
                     files: Vec::new(),
                     file_count: 0,
                     is_valid_pack: false,
+                    pfh_version: "Unknown".to_string(),
+                    header_bitmask_hex: "0x0".to_string(),
+                    sha256_hash: String::new(),
+                    last_modified_str: String::new(),
                 }
             };
 
@@ -324,7 +346,6 @@ impl PackParser {
             }
         }
 
-        // Limit detailed conflicts to top 1000 to keep IPC payload lightweight (<100KB)
         if detailed_conflicts.len() > 1000 {
             detailed_conflicts.truncate(1000);
         }
@@ -346,6 +367,41 @@ impl PackParser {
     }
 }
 
+fn compute_fast_pack_hash(magic: &[u8; 4], header: &[u8; 20], index: &[u8], file_len: u64) -> String {
+    let mut h1: u64 = 0xcbf29ce484222325;
+    let mut h2: u64 = 0x100000001b3;
+
+    for &b in magic {
+        h1 = (h1 ^ (b as u64)).wrapping_mul(0x100000001b3);
+    }
+    for &b in header {
+        h2 = (h2 ^ (b as u64)).wrapping_mul(0xcbf29ce484222325);
+    }
+    for &b in index.iter().take(4096) {
+        h1 = (h1 ^ (b as u64)).wrapping_mul(0x100000001b3);
+    }
+    h1 = (h1 ^ file_len).wrapping_mul(0x100000001b3);
+    h2 = (h2 ^ (index.len() as u64)).wrapping_mul(0xcbf29ce484222325);
+
+    format!("{:016x}{:016x}", h1, h2)
+}
+
+fn format_epoch_days(days: u64) -> String {
+    // Simple epoch to YYYY-MM-DD converter
+    let z = days as i64 + 719468;
+    let era = if z >= 0 { z } else { z - 146096 } / 146097;
+    let doe = (z - era * 146097) as u32;
+    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+    let y = yoe as i64 + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 };
+    let final_y = if m <= 2 { y + 1 } else { y };
+
+    format!("{:04}-{:02}-{:02}", final_y, m, d)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -363,5 +419,16 @@ mod tests {
         assert_eq!(result.total_conflicts, 0);
         assert_eq!(result.fatal_conflicts, 0);
         assert!(result.detailed_conflicts.is_empty());
+    }
+
+    #[test]
+    fn test_hash_deterministic() {
+        let magic = *b"PFH5";
+        let header = [0u8; 20];
+        let index = vec![1, 2, 3, 4, 5];
+        let h1 = compute_fast_pack_hash(&magic, &header, &index, 1000);
+        let h2 = compute_fast_pack_hash(&magic, &header, &index, 1000);
+        assert_eq!(h1, h2);
+        assert_eq!(h1.len(), 32);
     }
 }

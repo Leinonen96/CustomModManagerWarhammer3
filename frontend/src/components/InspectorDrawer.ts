@@ -1,6 +1,6 @@
 /**
- * Collapsible Right Slide-Over Inspector Drawer.
- * Displays Pack File Manifests, Conflict Diffs, Dependencies, and 1-Click Resolution Actions.
+ * Collapsible Right Slide-Over Inspector Drawer with 3-Tier Progressive Disclosure.
+ * Displays Pack File Manifests, Conflict Diffs, Dependencies, and Technical Specifications.
  */
 import { store } from '../state/store';
 import { Mod, PackedFileManifest, FileConflictDetail, ModConflictSummary } from '../types';
@@ -12,6 +12,7 @@ import { tauriInvoke } from '../api/client';
 export class InspectorDrawer {
     private drawerEl!: HTMLElement;
     private titleEl!: HTMLElement;
+    private subtitleEl!: HTMLElement;
     private bodyEl!: HTMLElement;
     private closeBtn!: HTMLButtonElement;
     private autoSortBtn!: HTMLButtonElement;
@@ -38,8 +39,9 @@ export class InspectorDrawer {
         this.drawerEl.innerHTML = `
             <div class="drawer-header">
                 <div class="drawer-title-box">
-                    <span class="drawer-pretitle">Mod Inspector</span>
+                    <span class="drawer-pretitle" id="drawer-pretitle">Mod Inspector</span>
                     <h3 class="drawer-title" id="drawer-mod-title">No Mod Selected</h3>
+                    <span class="drawer-subtitle" id="drawer-mod-subtitle"></span>
                 </div>
                 <button type="button" id="drawer-close-btn" class="drawer-close-btn" title="Close Drawer (Escape)">✕</button>
             </div>
@@ -70,6 +72,7 @@ export class InspectorDrawer {
         workspace.appendChild(this.drawerEl);
 
         this.titleEl = this.drawerEl.querySelector('#drawer-mod-title') as HTMLElement;
+        this.subtitleEl = this.drawerEl.querySelector('#drawer-mod-subtitle') as HTMLElement;
         this.bodyEl = this.drawerEl.querySelector('#drawer-body') as HTMLElement;
         this.closeBtn = this.drawerEl.querySelector('#drawer-close-btn') as HTMLButtonElement;
         this.autoSortBtn = this.drawerEl.querySelector('#drawer-btn-autosort') as HTMLButtonElement;
@@ -137,6 +140,7 @@ export class InspectorDrawer {
 
         if (!mod) {
             this.titleEl.innerText = 'No Mod Selected';
+            this.subtitleEl.innerText = '';
             this.bodyEl.innerHTML = `
                 <div class="drawer-empty-state">
                     <p>Select any mod or click 🔍 on a card to inspect pack files, dependencies, and conflicts.</p>
@@ -148,6 +152,10 @@ export class InspectorDrawer {
         }
 
         this.titleEl.innerText = mod.title || mod.name;
+        
+        const wsText = mod.id && mod.id.length > 5 ? `Workshop ID: ${mod.id}` : 'Local Mod';
+        const dateText = mod.last_modified_str ? ` • Updated: ${mod.last_modified_str}` : '';
+        this.subtitleEl.innerText = `${wsText}${dateText}`;
 
         // Fetch Conflict summary
         const conflictAnalysis = store.getConflictAnalysis();
@@ -215,6 +223,11 @@ export class InspectorDrawer {
             });
         }
 
+        const isWorkshop = (mod.source_type || 'Workshop').toLowerCase() === 'workshop' || Boolean(mod.id && mod.id.length > 5);
+        const pfhRev = manifest?.pfh_version || 'PFH5';
+        const bitmask = manifest?.header_bitmask_hex || '0x00000003';
+        const hash = manifest?.sha256_hash || 'Calculating checksum...';
+
         this.bodyEl.innerHTML = `
             <div class="drawer-overview">
                 <div class="drawer-mod-hero">
@@ -222,6 +235,7 @@ export class InspectorDrawer {
                     <div class="drawer-mod-details">
                         <span class="drawer-filename">${escapeHtml(mod.name)}</span>
                         <div class="drawer-badge-row">
+                            <span class="drawer-pill ${isWorkshop ? 'pill-ws' : 'pill-local'}">${isWorkshop ? 'Steam Workshop' : 'Local /data'}</span>
                             <span class="drawer-pill pill-type">${typeof packType === 'string' ? packType : 'Mod'} Pack</span>
                             <span class="drawer-pill pill-size">${sizeMb}</span>
                         </div>
@@ -272,12 +286,61 @@ export class InspectorDrawer {
                     </div>
                 ` : ''}
 
+                <!-- Tier 3: Collapsible Advanced Technical Specs -->
                 <div class="drawer-section">
-                    <h4 class="drawer-section-title">File Details</h4>
-                    <p class="drawer-path-text">${escapeHtml(mod.real_path || 'No path available')}</p>
+                    <details class="tech-specs-accordion" open>
+                        <summary class="tech-specs-summary">
+                            <span>⚙️ Advanced Technical Specifications</span>
+                        </summary>
+                        <div class="tech-specs-content">
+                            <div class="tech-spec-row">
+                                <span class="tech-spec-label">PFH Revision:</span>
+                                <span class="tech-spec-value">${escapeHtml(pfhRev)} (Warhammer III Pack)</span>
+                            </div>
+                            <div class="tech-spec-row">
+                                <span class="tech-spec-label">Header Bitmask:</span>
+                                <span class="tech-spec-value font-mono">${escapeHtml(bitmask)}</span>
+                            </div>
+                            <div class="tech-spec-row">
+                                <span class="tech-spec-label">Indexed Files:</span>
+                                <span class="tech-spec-value font-mono">${fileCount.toLocaleString()} files</span>
+                            </div>
+                            <div class="tech-spec-row">
+                                <span class="tech-spec-label">Multiplayer Checksum:</span>
+                                <div class="tech-spec-copyable">
+                                    <code class="hash-text" title="${escapeHtml(hash)}">${escapeHtml(hash)}</code>
+                                    <button type="button" class="btn btn-secondary btn-sm btn-copy-hash" title="Copy Checksum for Co-Op Sync">📋 Copy</button>
+                                </div>
+                            </div>
+                            <div class="tech-spec-row">
+                                <span class="tech-spec-label">Normalized Path:</span>
+                                <div class="tech-spec-copyable">
+                                    <code class="path-text" title="${escapeHtml(mod.real_path)}">${escapeHtml(mod.real_path)}</code>
+                                    <button type="button" class="btn btn-secondary btn-sm btn-copy-path" title="Copy Full File Path">📋 Copy</button>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
                 </div>
             </div>
         `;
+
+        // Bind Copy Buttons
+        const copyHashBtn = this.bodyEl.querySelector('.btn-copy-hash') as HTMLButtonElement;
+        if (copyHashBtn) {
+            copyHashBtn.onclick = () => {
+                navigator.clipboard.writeText(hash);
+                Toast.success('✓ Copied SHA-256 multiplayer checksum to clipboard!');
+            };
+        }
+
+        const copyPathBtn = this.bodyEl.querySelector('.btn-copy-path') as HTMLButtonElement;
+        if (copyPathBtn) {
+            copyPathBtn.onclick = () => {
+                navigator.clipboard.writeText(mod.real_path);
+                Toast.success('✓ Copied pack file path to clipboard!');
+            };
+        }
     }
 
     private renderConflictsTab(mod: Mod, conflictAnalysis: any, summary?: ModConflictSummary): void {

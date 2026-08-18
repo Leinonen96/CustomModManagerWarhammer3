@@ -12,6 +12,9 @@ export interface Mod {
     file_size_bytes?: number;
     is_movie_pack?: boolean;
     last_modified?: number;
+    source_type?: 'Workshop' | 'Local' | string;
+    last_modified_str?: string;
+    author?: string;
 }
 
 export type PackType = 'Movie' | 'Boot' | 'Release' | 'Mod' | { Unknown: number };
@@ -31,6 +34,10 @@ export interface PackedFileManifest {
     files: string[];
     file_count: number;
     is_valid_pack: boolean;
+    pfh_version?: string;
+    header_bitmask_hex?: string;
+    sha256_hash?: string;
+    last_modified_str?: string;
 }
 
 export interface FileConflictDetail {

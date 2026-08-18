@@ -28,6 +28,14 @@ pub struct PackedFileManifest {
     pub files: Vec<String>, // e.g. "db/units_custom_tables/data__"
     pub file_count: usize,
     pub is_valid_pack: bool,
+    #[serde(default)]
+    pub pfh_version: String, // e.g. "PFH5"
+    #[serde(default)]
+    pub header_bitmask_hex: String, // e.g. "0x00000003"
+    #[serde(default)]
+    pub sha256_hash: String, // Hex string for multiplayer sync
+    #[serde(default)]
+    pub last_modified_str: String, // e.g. "2026-08-10"
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

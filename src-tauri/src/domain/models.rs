@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Mod {
     pub id: String,
     pub name: String,
@@ -16,6 +16,12 @@ pub struct Mod {
     pub is_movie_pack: bool,
     #[serde(default)]
     pub last_modified: f64,
+    #[serde(default)]
+    pub source_type: String, // "Workshop" | "Local"
+    #[serde(default)]
+    pub last_modified_str: String, // e.g. "2026-08-10"
+    #[serde(default)]
+    pub author: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
