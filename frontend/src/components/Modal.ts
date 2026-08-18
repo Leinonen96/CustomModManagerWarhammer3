@@ -50,7 +50,12 @@ export class Modal {
     }
 }
 
-export function showConfirmDialog(title: string, message: string, confirmText = 'Confirm', cancelText = 'Cancel'): Promise<boolean> {
+export function showConfirmDialog(
+    title: string,
+    message: string,
+    confirmText = 'Confirm',
+    cancelText = 'Cancel'
+): Promise<boolean> {
     return new Promise((resolve) => {
         let overlay = document.getElementById('confirm-modal-overlay');
         if (!overlay) {
@@ -62,11 +67,13 @@ export function showConfirmDialog(title: string, message: string, confirmText = 
 
         overlay.innerHTML = `
             <div class="modal confirm-modal">
-                <h3 style="margin-top: 0; color: #f87171;">${title}</h3>
-                <p style="color: #d1d5db; line-height: 1.5; margin: 15px 0;">${message}</p>
-                <div class="modal-buttons">
-                    <button class="btn-secondary" id="confirm-cancel-btn">${cancelText}</button>
-                    <button class="btn-red" id="confirm-ok-btn">${confirmText}</button>
+                <div class="modal-header">
+                    <h2 style="color: var(--color-danger);">${title}</h2>
+                </div>
+                <p class="modal-desc" style="margin-top: 8px;">${message}</p>
+                <div class="modal-buttons" style="justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" id="confirm-cancel-btn">${cancelText}</button>
+                    <button type="button" class="btn btn-danger" id="confirm-ok-btn">${confirmText}</button>
                 </div>
             </div>
         `;

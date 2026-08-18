@@ -3,11 +3,11 @@
  */
 .titlebar {
     height: var(--titlebar-height);
-    background: var(--bg-base);
+    background: var(--color-bg-base);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--color-border-subtle);
     user-select: none;
     -webkit-app-region: drag;
     flex-shrink: 0;
@@ -17,37 +17,38 @@
 .titlebar-drag-region {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding-left: 14px;
+    gap: 8px;
+    padding-left: 12px;
     flex-grow: 1;
     height: 100%;
 }
 
 .titlebar-icon {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
     pointer-events: none;
 }
 
 .titlebar-title {
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: var(--text-secondary);
+    color: var(--color-text-secondary);
     pointer-events: none;
 }
 
 .titlebar-badge {
+    font-family: 'JetBrains Mono', monospace;
     font-size: 0.72rem;
     font-weight: 600;
-    background: var(--bg-surface-elevated);
-    color: var(--accent-emerald);
-    padding: 2px 8px;
-    border-radius: var(--radius-pill);
-    border: 1px solid var(--border-subtle);
+    background: var(--color-bg-surface-elevated);
+    color: var(--color-primary);
+    padding: 2px 7px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border-subtle);
     pointer-events: none;
-    margin-left: 6px;
+    margin-left: 4px;
 }
 
 /* Window Action Controls (Minimize, Maximize, Close) */
@@ -62,30 +63,30 @@
     display: inline-flex;
     justify-content: center;
     align-items: center;
-    width: 44px;
+    width: 42px;
     height: 100%;
     background: transparent;
     border: none;
-    color: var(--text-muted);
-    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
     cursor: pointer;
-    transition: background 0.12s, color 0.12s;
+    transition: background-color 0.08s, color 0.08s;
     outline: none;
 }
 
 .titlebar-btn:hover {
-    background: var(--bg-surface-elevated);
-    color: var(--text-primary);
+    background: var(--color-bg-surface-hover);
+    color: var(--color-text-primary);
 }
 
 .titlebar-btn.btn-close:hover {
-    background: #E11D48;
+    background: var(--color-danger);
     color: #FFFFFF;
 }
 
 .titlebar-btn svg {
-    width: 12px;
-    height: 12px;
+    width: 11px;
+    height: 11px;
     fill: currentColor;
 }
 

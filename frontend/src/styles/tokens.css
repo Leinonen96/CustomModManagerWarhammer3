@@ -1,59 +1,106 @@
 /**
- * WH3 Mod Manager Design System - Color Tokens & Layout Dimensions (Pro Studio Dark)
+ * WH3 Mod Manager Design System - Core Design Tokens (Pro Studio Dark)
+ * Single Source of Truth for Colors, Geometry, Typography, and Transitions.
  */
 :root {
-    /* UI Zoom Scale Factor */
+    /* --- DYNAMIC UI SCALE --- */
     --ui-scale: 1.0;
 
-    /* Base Palette (Deep Obsidian Studio) */
-    --bg-app: #08090D;
-    --bg-base: #0C0E14;
-    --bg-surface: #11141E;
-    --bg-surface-elevated: #161B28;
-    --bg-card: #141824;
-    --bg-card-hover: #1D2335;
-    --bg-card-active: #242B42;
+    /* --- SURFACES & DEPTHS --- */
+    --color-bg-app: #07080B;
+    --color-bg-base: #0B0D13;
+    --color-bg-surface: #10131D;
+    --color-bg-surface-elevated: #151A27;
+    --color-bg-surface-hover: #192030;
+    --color-bg-card: #131723;
+    --color-bg-card-hover: #1A2031;
+    --color-bg-card-active: #222A40;
 
-    /* Accent & Brand Colors */
-    --accent-emerald: #10B981;
-    --accent-emerald-hover: #059669;
-    --accent-emerald-glow: rgba(16, 185, 129, 0.25);
-    --accent-emerald-subtle: rgba(16, 185, 129, 0.12);
+    /* Backward compatibility aliases */
+    --bg-app: var(--color-bg-app);
+    --bg-base: var(--color-bg-base);
+    --bg-surface: var(--color-bg-surface);
+    --bg-surface-elevated: var(--color-bg-surface-elevated);
+    --bg-card: var(--color-bg-card);
+    --bg-card-hover: var(--color-bg-card-hover);
+    --bg-card-active: var(--color-bg-card-active);
 
-    --accent-amber: #F59E0B;
-    --accent-amber-subtle: rgba(245, 158, 11, 0.14);
+    /* --- ACCENTS & BRAND PALETTE --- */
+    --color-primary: #10B981;
+    --color-primary-hover: #059669;
+    --color-primary-active: #047857;
+    --color-primary-subtle: rgba(16, 185, 129, 0.12);
+    --color-primary-glow: rgba(16, 185, 129, 0.25);
 
-    --accent-cyan: #38BDF8;
-    --accent-cyan-subtle: rgba(56, 189, 248, 0.14);
+    --color-amber: #F59E0B;
+    --color-amber-hover: #D97706;
+    --color-amber-subtle: rgba(245, 158, 11, 0.14);
 
-    --accent-crimson: #EF4444;
-    --accent-crimson-subtle: rgba(239, 68, 68, 0.15);
+    --color-cyan: #38BDF8;
+    --color-cyan-hover: #0284C7;
+    --color-cyan-subtle: rgba(56, 189, 248, 0.14);
 
-    /* Text Colors */
-    --text-primary: #F3F4F6;
-    --text-secondary: #9CA3AF;
-    --text-muted: #6B7280;
-    --text-dim: #4B5563;
+    --color-danger: #EF4444;
+    --color-danger-hover: #DC2626;
+    --color-danger-subtle: rgba(239, 68, 68, 0.14);
 
-    /* Borders & Outlines (Sharp 1px Hardware Borders) */
-    --border-subtle: rgba(255, 255, 255, 0.07);
-    --border-medium: rgba(255, 255, 255, 0.14);
-    --border-focus: rgba(16, 185, 129, 0.5);
-    --border-accent: rgba(16, 185, 129, 0.3);
+    /* Backward compatibility aliases */
+    --accent-emerald: var(--color-primary);
+    --accent-emerald-hover: var(--color-primary-hover);
+    --accent-emerald-glow: var(--color-primary-glow);
+    --accent-emerald-subtle: var(--color-primary-subtle);
+    --accent-amber: var(--color-amber);
+    --accent-amber-subtle: var(--color-amber-subtle);
+    --accent-cyan: var(--color-cyan);
+    --accent-cyan-subtle: var(--color-cyan-subtle);
+    --accent-crimson: var(--color-danger);
+    --accent-crimson-subtle: var(--color-danger-subtle);
 
-    /* Sharp Professional Desktop Radiuses (Zero Bubbly Corners) */
+    /* --- TYPOGRAPHY COLORS --- */
+    --color-text-primary: #F3F4F6;
+    --color-text-secondary: #9CA3AF;
+    --color-text-muted: #6B7280;
+    --color-text-dim: #4B5563;
+
+    /* Backward compatibility aliases */
+    --text-primary: var(--color-text-primary);
+    --text-secondary: var(--color-text-secondary);
+    --text-muted: var(--color-text-muted);
+    --text-dim: var(--color-text-dim);
+
+    /* --- BORDERS & OUTLINES (1px Hardware Acceleration) --- */
+    --color-border-subtle: rgba(255, 255, 255, 0.07);
+    --color-border-medium: rgba(255, 255, 255, 0.13);
+    --color-border-hover: rgba(255, 255, 255, 0.22);
+    --color-border-focus: rgba(16, 185, 129, 0.55);
+    --color-border-accent: rgba(16, 185, 129, 0.35);
+
+    /* Backward compatibility aliases */
+    --border-subtle: var(--color-border-subtle);
+    --border-medium: var(--color-border-medium);
+    --border-focus: var(--color-border-focus);
+    --border-accent: var(--color-border-accent);
+
+    /* --- GEOMETRY & RADIUSES (Desktop Precision) --- */
     --radius-sm: 2px;
     --radius-md: 3px;
     --radius-lg: 4px;
-    --radius-pill: 3px;
+    --radius-pill: 2px;
 
-    /* Elevation Shadows (Zero Cost for High Performance) */
+    /* --- COMPONENT SIZING SCALE --- */
+    --control-height-sm: 24px;
+    --control-height-md: 30px;
+    --control-height-lg: 36px;
+
+    --titlebar-height: 32px;
+    --header-height: 46px;
+
+    /* --- ELEVATIONS (Zero Cost GPU Layers) --- */
     --shadow-card: none;
     --shadow-card-hover: none;
-    --shadow-modal: 0 16px 36px rgba(0, 0, 0, 0.75);
+    --shadow-modal: 0 16px 40px rgba(0, 0, 0, 0.8);
     --shadow-toast: 0 8px 24px rgba(0, 0, 0, 0.5);
 
-    /* Compact Layout Dimensions */
-    --titlebar-height: 32px;
-    --header-height: 48px;
+    /* --- CUSTOM SVG SELECT CHEVRON --- */
+    --select-chevron-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='none' stroke='%239CA3AF' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
 }

@@ -39,7 +39,7 @@ export class SettingsModal extends Modal {
                 </div>
                 <div class="input-with-browse">
                     <input type="text" id="config-workshop" placeholder=".../steamapps/workshop/content/1142710">
-                    <button type="button" class="btn-browse" id="btn-browse-workshop" title="Browse for Workshop folder">📁 Browse</button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btn-browse-workshop" title="Browse for Workshop folder">📁 Browse</button>
                 </div>
                 <small class="help-text">Where Steam downloads subscribed .pack files and preview images.</small>
             </div>
@@ -51,7 +51,7 @@ export class SettingsModal extends Modal {
                 </div>
                 <div class="input-with-browse">
                     <input type="text" id="config-data" placeholder=".../Total War WARHAMMER III/data">
-                    <button type="button" class="btn-browse" id="btn-browse-data" title="Browse for Game Data folder">📁 Browse</button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btn-browse-data" title="Browse for Game Data folder">📁 Browse</button>
                 </div>
                 <small class="help-text">The game's actual data folder where mod symlinks are placed.</small>
             </div>
@@ -63,16 +63,16 @@ export class SettingsModal extends Modal {
                 </div>
                 <div class="input-with-browse">
                     <input type="text" id="config-script" placeholder=".../scripts/user.script.txt">
-                    <button type="button" class="btn-browse" id="btn-browse-script" title="Browse for Scripts folder">📁 Browse</button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btn-browse-script" title="Browse for Scripts folder">📁 Browse</button>
                 </div>
                 <small class="help-text">The script file that commands the game engine's active load order.</small>
             </div>
 
             <div class="modal-buttons">
-                <button type="button" class="btn-secondary" id="btn-autodetect">🔍 Auto-Detect Paths</button>
+                <button type="button" class="btn btn-secondary" id="btn-autodetect">🔍 Auto-Detect Paths</button>
                 <div style="flex-grow: 1;"></div>
-                <button type="button" class="btn-secondary" id="close-modal-btn">Cancel</button>
-                <button type="button" class="btn-primary" id="btn-save-settings">Save & Apply</button>
+                <button type="button" class="btn btn-secondary" id="close-modal-btn">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btn-save-settings">Save & Apply</button>
             </div>
         `;
 
