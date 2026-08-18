@@ -1,8 +1,6 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use regex::Regex;
-use base64::Engine;
-use base64::engine::general_purpose::STANDARD as BASE64;
 use crate::domain::Mod;
 
 pub struct WorkshopScanner;
@@ -50,7 +48,8 @@ impl WorkshopScanner {
 
             for pack_path in pack_files {
                 let pack_name = pack_path.file_name().unwrap_or_default().to_string_lossy().to_string();
-                let thumb_data_uri = Self::find_and_encode_thumbnail(&files, &pack_name);
+                let thumb_path = Self::find_thumbnail_path(&files, &pack_name);
+                let thumb_str = thumb_path.map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
 
                 let mut file_size = 0;
                 let mut mtime = 0.0;
@@ -79,7 +78,7 @@ impl WorkshopScanner {
                     name: pack_name,
                     title: clean_title,
                     real_path: pack_path.to_string_lossy().to_string(),
-                    thumb: thumb_data_uri,
+                    thumb: thumb_str,
                     url: steam_url,
                     file_size_bytes: file_size,
                     is_movie_pack: false,
@@ -92,15 +91,13 @@ impl WorkshopScanner {
         mods
     }
 
-    fn find_and_encode_thumbnail(files: &[PathBuf], pack_name: &str) -> String {
+    fn find_thumbnail_path(files: &[PathBuf], pack_name: &str) -> Option<PathBuf> {
         let base_stem = pack_name
             .trim_end_matches(".pack")
             .trim_end_matches(".PACK")
             .to_lowercase();
 
-        let mut candidate = None;
-
-        // 1. Try matching base stem or standard names
+        // 1. Try matching base stem or standard thumbnail names
         for file in files {
             if let Some(stem) = file.file_stem() {
                 let stem_str = stem.to_string_lossy().to_lowercase();
@@ -108,8 +105,7 @@ impl WorkshopScanner {
                     let ext_str = ext.to_string_lossy().to_lowercase();
                     if ext_str == "png" || ext_str == "jpg" || ext_str == "jpeg" || ext_str == "webp" {
                         if stem_str == base_stem || stem_str == "thumbnail" || stem_str == "thumb" || stem_str == "preview" {
-                            candidate = Some(file);
-                            break;
+                            return Some(file.clone());
                         }
                     }
                 }
@@ -117,33 +113,16 @@ impl WorkshopScanner {
         }
 
         // 2. Fallback: Any image in the folder
-        if candidate.is_none() {
-            for file in files {
-                if let Some(ext) = file.extension() {
-                    let ext_str = ext.to_string_lossy().to_lowercase();
-                    if ext_str == "png" || ext_str == "jpg" || ext_str == "jpeg" || ext_str == "webp" {
-                        candidate = Some(file);
-                        break;
-                    }
+        for file in files {
+            if let Some(ext) = file.extension() {
+                let ext_str = ext.to_string_lossy().to_lowercase();
+                if ext_str == "png" || ext_str == "jpg" || ext_str == "jpeg" || ext_str == "webp" {
+                    return Some(file.clone());
                 }
             }
         }
 
-        // 3. Read and encode as base64 data URI
-        if let Some(image_path) = candidate {
-            if let Ok(bytes) = fs::read(image_path) {
-                let ext = image_path.extension().and_then(|e| e.to_str()).unwrap_or("png").to_lowercase();
-                let mime = match ext.as_str() {
-                    "jpg" | "jpeg" => "image/jpeg",
-                    "webp" => "image/webp",
-                    _ => "image/png",
-                };
-                let b64 = BASE64.encode(&bytes);
-                return format!("data:{};base64,{}", mime, b64);
-            }
-        }
-
-        String::new()
+        None
     }
 
     fn extract_workshop_title(folder_path: &Path) -> Option<String> {

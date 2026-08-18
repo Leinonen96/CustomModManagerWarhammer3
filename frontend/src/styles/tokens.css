@@ -11,17 +11,17 @@
     --bg-surface: #121520;
     --bg-surface-elevated: #181D2C;
     --bg-card: #151926;
-    --bg-card-hover: #1E2336;
+    --bg-card-hover: #1E2436;
     --bg-card-active: #242B42;
 
     /* Accent & Brand Colors */
     --accent-emerald: #10B981;
     --accent-emerald-hover: #059669;
-    --accent-emerald-glow: rgba(16, 185, 129, 0.28);
+    --accent-emerald-glow: rgba(16, 185, 129, 0.25);
     --accent-emerald-subtle: rgba(16, 185, 129, 0.12);
 
     --accent-amber: #F59E0B;
-    --accent-amber-glow: rgba(245, 158, 11, 0.25);
+    --accent-amber-subtle: rgba(245, 158, 11, 0.14);
 
     --accent-cyan: #38BDF8;
     --accent-cyan-subtle: rgba(56, 189, 248, 0.14);
@@ -35,8 +35,8 @@
     --text-muted: #6B7280;
     --text-dim: #4B5563;
 
-    /* Borders & Outlines */
-    --border-subtle: rgba(255, 255, 255, 0.07);
+    /* Borders & Outlines (High Performance 1px Hardware Borders) */
+    --border-subtle: rgba(255, 255, 255, 0.06);
     --border-medium: rgba(255, 255, 255, 0.12);
     --border-focus: rgba(16, 185, 129, 0.5);
     --border-accent: rgba(16, 185, 129, 0.3);
@@ -47,11 +47,11 @@
     --radius-lg: 14px;
     --radius-pill: 9999px;
 
-    /* Elevation Shadows */
-    --shadow-card: 0 2px 6px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.2);
-    --shadow-card-hover: 0 6px 16px rgba(0, 0, 0, 0.45), 0 0 12px var(--accent-emerald-glow);
-    --shadow-modal: 0 20px 48px rgba(0, 0, 0, 0.75), 0 0 1px rgba(255, 255, 255, 0.15);
-    --shadow-toast: 0 12px 32px rgba(0, 0, 0, 0.6);
+    /* Elevation Shadows (Zero Cost for High Performance) */
+    --shadow-card: none;
+    --shadow-card-hover: none;
+    --shadow-modal: 0 16px 36px rgba(0, 0, 0, 0.7);
+    --shadow-toast: 0 8px 24px rgba(0, 0, 0, 0.5);
 
     /* Layout Dimensions */
     --titlebar-height: 38px;

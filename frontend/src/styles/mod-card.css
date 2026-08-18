@@ -1,29 +1,27 @@
 /**
- * WH3 Mod Manager Design System - Studio Mod Item Card & Action Buttons
+ * WH3 Mod Manager Design System - Studio Mod Item Card & Action Buttons (High Performance)
  */
 
 .mod-item {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 10px 12px;
-    margin-bottom: 8px;
+    padding: 8px 12px;
+    margin-bottom: 6px;
     background: var(--bg-card);
     border-radius: var(--radius-sm);
     cursor: grab;
     border: 1px solid var(--border-subtle);
-    box-shadow: var(--shadow-card);
     contain: layout style paint;
     content-visibility: auto;
-    contain-intrinsic-size: auto 74px;
+    contain-intrinsic-size: auto 68px;
     transform: translateZ(0);
-    transition: border-color 0.12s, background 0.12s, transform 0.1s;
+    transition: border-color 0.1s, background-color 0.1s;
 }
 
 .mod-item:hover {
     border-color: var(--border-medium);
     background: var(--bg-card-hover);
-    box-shadow: var(--shadow-card-hover);
 }
 
 .mod-item:active {
@@ -41,25 +39,23 @@
 }
 
 .sortable-drag {
-    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.7);
     border-color: var(--accent-emerald);
 }
 
 /* Order number badge */
 .order-num {
-    font-size: 1.05rem;
+    font-size: 1rem;
     font-weight: 700;
     color: var(--text-muted);
-    width: 36px;
+    width: 34px;
     text-align: center;
     flex-shrink: 0;
     user-select: none;
-    transition: all 0.15s;
+    transition: color 0.1s;
 }
 
 .order-active {
     color: var(--accent-emerald);
-    text-shadow: 0 0 8px var(--accent-emerald-glow);
 }
 
 .order-editable {
@@ -74,7 +70,7 @@
 }
 
 .order-input {
-    width: 38px;
+    width: 36px;
     padding: 2px 0;
     text-align: center;
     font-size: 0.95rem;
@@ -88,8 +84,8 @@
 
 /* Mod thumbnail */
 .mod-thumb-container {
-    width: 52px;
-    height: 52px;
+    width: 48px;
+    height: 48px;
     flex-shrink: 0;
     border-radius: var(--radius-sm);
     overflow: hidden;
@@ -98,6 +94,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    contain: strict;
 }
 
 .mod-thumb {
@@ -107,8 +104,8 @@
 }
 
 .fallback-thumb {
-    width: 30px;
-    height: 30px;
+    width: 28px;
+    height: 28px;
     opacity: 0.6;
 }
 
@@ -129,7 +126,7 @@
 
 .mod-title {
     font-weight: 600;
-    font-size: 0.94rem;
+    font-size: 0.92rem;
     color: var(--text-primary);
     white-space: nowrap;
     overflow: hidden;
@@ -148,7 +145,7 @@
 }
 
 .mod-filename {
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     color: var(--text-muted);
     white-space: nowrap;
     overflow: hidden;
@@ -160,9 +157,9 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 0.75rem;
+    font-size: 0.74rem;
     color: var(--text-dim);
-    margin-top: 3px;
+    margin-top: 2px;
 }
 
 .meta-dot {
@@ -175,7 +172,6 @@
     text-decoration: none;
     font-weight: 500;
     cursor: pointer;
-    transition: color 0.12s, text-decoration 0.12s;
 }
 
 .steam-link:hover {
@@ -189,7 +185,7 @@
     align-items: center;
     gap: 4px;
     opacity: 0;
-    transition: opacity 0.15s ease-in-out;
+    transition: opacity 0.12s ease-in-out;
     flex-shrink: 0;
 }
 
@@ -207,7 +203,7 @@
     font-weight: 600;
     cursor: pointer;
     line-height: 1;
-    transition: all 0.12s;
+    transition: background-color 0.1s, color 0.1s, border-color 0.1s;
     outline: none;
 }
 

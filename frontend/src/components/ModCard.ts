@@ -3,6 +3,7 @@
  */
 import { Mod } from '../types';
 import { tauriInvoke } from '../api/client';
+import { convertFileSrc } from '@tauri-apps/api/core';
 
 export interface ModCardCallbacks {
     onMoveToPosition?: (mod: Mod, targetPos: number) => void;
@@ -26,7 +27,11 @@ export function createModCard(
     const steamUrl = mod.url || `https://steamcommunity.com/sharedfiles/filedetails/?id=${mod.id}`;
     const displayTitle = mod.title || mod.name.replace(/\.pack$/i, '').replace(/_/g, ' ');
     const displayOrder = orderNumber !== null ? orderNumber.toString() : '-';
-    const thumbSrc = mod.thumb && mod.thumb.length > 0 ? mod.thumb : '/static/gemini-svg.svg';
+    
+    // Efficiently convert local filesystem path to Tauri Asset URL
+    const thumbSrc = (mod.thumb && mod.thumb.length > 0)
+        ? (mod.thumb.startsWith('/') ? convertFileSrc(mod.thumb) : mod.thumb)
+        : '/static/gemini-svg.svg';
 
     // Format file size
     let sizeStr = '';

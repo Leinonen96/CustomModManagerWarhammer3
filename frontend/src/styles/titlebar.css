@@ -26,7 +26,6 @@
 .titlebar-icon {
     width: 18px;
     height: 18px;
-    filter: drop-shadow(0 0 4px var(--accent-emerald-glow));
     pointer-events: none;
 }
 
