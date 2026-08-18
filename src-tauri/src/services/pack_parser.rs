@@ -93,17 +93,16 @@ impl PackParser {
 
         manifest.pfh_version = String::from_utf8_lossy(&magic).to_string();
 
-        let mut header_buf = [0u8; 20];
+        let mut header_buf = [0u8; 24];
         if reader.read_exact(&mut header_buf).is_err() {
             return manifest;
         }
 
         let pack_type_val = u32::from_le_bytes(header_buf[0..4].try_into().unwrap_or_default());
-        let dep_count =
-            u32::from_le_bytes(header_buf[4..8].try_into().unwrap_or_default()) as usize;
-        let index_size =
-            u32::from_le_bytes(header_buf[8..12].try_into().unwrap_or_default()) as usize;
+        let _bitmask = u32::from_le_bytes(header_buf[4..8].try_into().unwrap_or_default());
         let file_count =
+            u32::from_le_bytes(header_buf[12..16].try_into().unwrap_or_default()) as usize;
+        let index_size =
             u32::from_le_bytes(header_buf[16..20].try_into().unwrap_or_default()) as usize;
 
         manifest.header_bitmask_hex = format!("0x{:08X}", pack_type_val);
@@ -114,14 +113,6 @@ impl PackParser {
             3 => PackType::Mod,
             other => PackType::Unknown(other),
         };
-
-        manifest.file_count = file_count;
-
-        // Skip extended header bytes for PFH5 (often 4 or 8 extra header bytes)
-        if is_pfh5 {
-            let mut extra = [0u8; 4];
-            let _ = reader.read_exact(&mut extra);
-        }
 
         // Safety limit: if index_size is unreasonably large or 0, cap reading
         if index_size == 0 || index_size > 50 * 1024 * 1024 {
@@ -140,17 +131,15 @@ impl PackParser {
 
         let mut cursor = 0;
 
-        // Read Dependency List from in-memory slice
-        for _ in 0..dep_count {
-            if cursor >= index_buf.len() {
-                break;
-            }
-            if let Some(null_idx) = index_buf[cursor..].iter().position(|&b| b == 0) {
-                let dep_str =
-                    String::from_utf8_lossy(&index_buf[cursor..cursor + null_idx]).to_string();
-                cursor += null_idx + 1;
-                if !dep_str.is_empty() {
-                    manifest.dependencies.push(dep_str);
+        // Read Dependency List from in-memory slice (in TW packs, dependencies end with .pack)
+        while cursor < index_buf.len() {
+            if let Some(pos) = index_buf[cursor..].iter().position(|&b| b == 0) {
+                let s = String::from_utf8_lossy(&index_buf[cursor..cursor + pos]).to_string();
+                if s.ends_with(".pack") || s.ends_with(".PACK") {
+                    manifest.dependencies.push(s);
+                    cursor += pos + 1;
+                } else {
+                    break;
                 }
             } else {
                 break;
@@ -159,29 +148,22 @@ impl PackParser {
 
         // Read Packed Files Manifest Index from in-memory slice
         let mut files = Vec::with_capacity(file_count.min(20_000));
-        for _ in 0..file_count {
+        while cursor < index_buf.len() && files.len() < file_count {
             if cursor + 4 > index_buf.len() {
                 break;
             }
             cursor += 4; // Skip uncompressed size
 
-            if is_pfh5 {
-                if cursor >= index_buf.len() {
+            if cursor >= index_buf.len() {
+                break;
+            }
+            let flag = index_buf[cursor];
+            cursor += 1;
+            if flag & 1 != 0 {
+                if cursor + 4 > index_buf.len() {
                     break;
                 }
-                let flag = index_buf[cursor];
-                cursor += 1;
-                if flag & 1 != 0 {
-                    if cursor + 4 > index_buf.len() {
-                        break;
-                    }
-                    cursor += 4; // Skip compressed size
-                }
-            } else if is_pfh4 {
-                if cursor >= index_buf.len() {
-                    break;
-                }
-                cursor += 1; // Skip flag
+                cursor += 4; // Skip compressed size
             }
 
             if cursor >= index_buf.len() {
@@ -202,6 +184,7 @@ impl PackParser {
             }
         }
 
+        manifest.file_count = files.len();
         manifest.files = files;
         manifest.is_valid_pack = true;
 
@@ -435,7 +418,7 @@ impl PackParser {
 
 fn compute_fast_pack_hash(
     magic: &[u8; 4],
-    header: &[u8; 20],
+    header: &[u8; 24],
     index: &[u8],
     file_len: u64,
 ) -> String {
@@ -495,11 +478,46 @@ mod tests {
     #[test]
     fn test_hash_deterministic() {
         let magic = *b"PFH5";
-        let header = [0u8; 20];
+        let header = [0u8; 24];
         let index = vec![1, 2, 3, 4, 5];
         let h1 = compute_fast_pack_hash(&magic, &header, &index, 1000);
         let h2 = compute_fast_pack_hash(&magic, &header, &index, 1000);
         assert_eq!(h1, h2);
         assert_eq!(h1.len(), 32);
+    }
+
+    #[test]
+    fn test_real_pack_parse_if_present() {
+        let path = Path::new(
+            "/mnt/GG/SteamLibrary/steamapps/workshop/content/1142710/3236566964/!scm_totn.pack",
+        );
+        if path.exists() {
+            let manifest = PackParser::parse_pack_file(path);
+            assert!(manifest.is_valid_pack);
+            assert!(manifest.file_count > 1000);
+            assert!(!manifest.sha256_hash.is_empty());
+            assert!(!manifest.dependencies.is_empty());
+            println!("REAL PACK PARSED VIA PackParser:");
+            println!("  File count: {}", manifest.file_count);
+            println!("  Dependencies: {:?}", manifest.dependencies);
+            println!("  SHA256: {}", manifest.sha256_hash);
+            let db_c = manifest
+                .files
+                .iter()
+                .filter(|f| f.starts_with("db/"))
+                .count();
+            let script_c = manifest
+                .files
+                .iter()
+                .filter(|f| f.starts_with("script/") || f.ends_with(".lua"))
+                .count();
+            let ui_c = manifest
+                .files
+                .iter()
+                .filter(|f| f.starts_with("ui/") || f.ends_with(".twui.xml"))
+                .count();
+            println!("  DB: {}, Scripts: {}, UI: {}", db_c, script_c, ui_c);
+            assert!(db_c > 0);
+        }
     }
 }

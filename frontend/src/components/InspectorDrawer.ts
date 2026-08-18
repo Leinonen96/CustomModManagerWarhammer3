@@ -215,10 +215,11 @@ export class InspectorDrawer {
 
         if (manifest?.files) {
             manifest.files.forEach(f => {
-                if (f.startsWith('db/')) dbCount++;
-                else if (f.startsWith('script/')) scriptCount++;
-                else if (f.startsWith('ui/')) uiCount++;
-                else if (f.includes('startpos.esf')) startposCount++;
+                const norm = f.replace(/\\/g, '/').toLowerCase();
+                if (norm.startsWith('db/')) dbCount++;
+                else if (norm.startsWith('script/') || norm.endsWith('.lua')) scriptCount++;
+                else if (norm.startsWith('ui/') || norm.endsWith('.twui.xml') || norm.endsWith('.layout')) uiCount++;
+                else if (norm.includes('startpos.esf')) startposCount++;
                 else otherCount++;
             });
         }
