@@ -1,17 +1,23 @@
 use std::collections::HashMap;
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::{BufReader, Read};
 use std::path::Path;
+use std::sync::Mutex;
+use std::time::UNIX_EPOCH;
 use crate::domain::{
     ConflictAnalysisResult, ConflictSeverity, FileConflictDetail, Mod, ModConflictSummary,
     PackType, PackedFileManifest,
 };
 
+static MANIFEST_CACHE: Mutex<Option<HashMap<String, (u64, PackedFileManifest)>>> = Mutex::new(None);
+
 pub struct PackParser;
 
 impl PackParser {
-    /// Fast zero-copy index parser for Total War Warhammer PFH5/PFH4/PFH3 packfiles.
+    /// Ultra-fast zero-copy index parser for Total War Warhammer PFH5/PFH4/PFH3 packfiles.
+    /// Reads the entire index in a single buffer and parses in-memory with mtime caching.
     pub fn parse_pack_file(pack_path: &Path) -> PackedFileManifest {
+        let path_str = pack_path.to_string_lossy().to_string();
         let pack_name = pack_path
             .file_name()
             .unwrap_or_default()
@@ -20,13 +26,36 @@ impl PackParser {
 
         let mut manifest = PackedFileManifest {
             pack_name: pack_name.clone(),
-            pack_path: pack_path.to_string_lossy().to_string(),
+            pack_path: path_str.clone(),
             pack_type: PackType::Mod,
             dependencies: Vec::new(),
             files: Vec::new(),
             file_count: 0,
             is_valid_pack: false,
         };
+
+        // Check file metadata and mtime cache
+        let metadata = match fs::metadata(pack_path) {
+            Ok(m) => m,
+            Err(_) => return manifest,
+        };
+
+        let mtime = metadata
+            .modified()
+            .ok()
+            .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+
+        {
+            let mut cache_guard = MANIFEST_CACHE.lock().unwrap();
+            let cache = cache_guard.get_or_insert_with(HashMap::new);
+            if let Some((cached_mtime, cached_manifest)) = cache.get(&path_str) {
+                if *cached_mtime == mtime && *cached_mtime > 0 {
+                    return cached_manifest.clone();
+                }
+            }
+        }
 
         let file = match File::open(pack_path) {
             Ok(f) => f,
@@ -57,7 +86,7 @@ impl PackParser {
 
         let pack_type_val = u32::from_le_bytes(header_buf[0..4].try_into().unwrap_or_default());
         let dep_count = u32::from_le_bytes(header_buf[4..8].try_into().unwrap_or_default()) as usize;
-        let _index_size = u32::from_le_bytes(header_buf[8..12].try_into().unwrap_or_default()) as usize;
+        let index_size = u32::from_le_bytes(header_buf[8..12].try_into().unwrap_or_default()) as usize;
         let file_count = u32::from_le_bytes(header_buf[16..20].try_into().unwrap_or_default()) as usize;
 
         manifest.pack_type = match pack_type_val & 0xF {
@@ -76,9 +105,28 @@ impl PackParser {
             let _ = reader.read_exact(&mut extra);
         }
 
-        // 2. Read Dependency List Table
+        // Safety limit: if index_size is unreasonably large or 0, cap reading
+        if index_size == 0 || index_size > 50 * 1024 * 1024 {
+            manifest.is_valid_pack = true;
+            return manifest;
+        }
+
+        // 2. Read ENTIRE index table in a single bulk I/O read
+        let mut index_buf = vec![0u8; index_size];
+        if reader.read_exact(&mut index_buf).is_err() {
+            return manifest;
+        }
+
+        let mut cursor = 0;
+
+        // Read Dependency List from in-memory slice
         for _ in 0..dep_count {
-            if let Ok(dep_str) = Self::read_null_terminated_string(&mut reader) {
+            if cursor >= index_buf.len() {
+                break;
+            }
+            if let Some(null_idx) = index_buf[cursor..].iter().position(|&b| b == 0) {
+                let dep_str = String::from_utf8_lossy(&index_buf[cursor..cursor + null_idx]).to_string();
+                cursor += null_idx + 1;
                 if !dep_str.is_empty() {
                     manifest.dependencies.push(dep_str);
                 }
@@ -87,80 +135,72 @@ impl PackParser {
             }
         }
 
-        // 3. Read Packed Files Manifest Index
-        // To remain ultra fast, we parse only the paths without loading data payloads
-        let mut files = Vec::with_capacity(file_count.min(50_000));
+        // Read Packed Files Manifest Index from in-memory slice
+        let mut files = Vec::with_capacity(file_count.min(20_000));
         for _ in 0..file_count {
-            // File size uncompressed (4 bytes)
-            let mut size_buf = [0u8; 4];
-            if reader.read_exact(&mut size_buf).is_err() {
+            if cursor + 4 > index_buf.len() {
+                break;
+            }
+            cursor += 4; // Skip uncompressed size
+
+            if is_pfh5 {
+                if cursor >= index_buf.len() {
+                    break;
+                }
+                let flag = index_buf[cursor];
+                cursor += 1;
+                if flag & 1 != 0 {
+                    if cursor + 4 > index_buf.len() {
+                        break;
+                    }
+                    cursor += 4; // Skip compressed size
+                }
+            } else if is_pfh4 {
+                if cursor >= index_buf.len() {
+                    break;
+                }
+                cursor += 1; // Skip flag
+            }
+
+            if cursor >= index_buf.len() {
                 break;
             }
 
-            // If compressed or PFH5 flag bit set, skip compressed size (4 bytes) + flag (1 byte)
-            if is_pfh5 {
-                let mut flag_buf = [0u8; 1];
-                if reader.read_exact(&mut flag_buf).is_err() {
-                    break;
-                }
-                // If is_compressed flag (bit 0), read compressed size
-                if flag_buf[0] & 1 != 0 {
-                    let mut comp_buf = [0u8; 4];
-                    if reader.read_exact(&mut comp_buf).is_err() {
-                        break;
-                    }
-                }
-            } else if is_pfh4 {
-                let mut flag_buf = [0u8; 1];
-                if reader.read_exact(&mut flag_buf).is_err() {
-                    break;
-                }
-            }
+            if let Some(null_idx) = index_buf[cursor..].iter().position(|&b| b == 0) {
+                let path_bytes = &index_buf[cursor..cursor + null_idx];
+                cursor += null_idx + 1;
 
-            // Null-terminated path string
-            match Self::read_null_terminated_string(&mut reader) {
-                Ok(path_str) => {
-                    let normalized = path_str.replace('\\', "/").trim().to_lowercase();
-                    if !normalized.is_empty() {
-                        files.push(normalized);
-                    }
+                let path_str = String::from_utf8_lossy(path_bytes);
+                let normalized = path_str.replace('\\', "/").trim().to_lowercase();
+                if !normalized.is_empty() {
+                    files.push(normalized);
                 }
-                Err(_) => break,
+            } else {
+                break;
             }
         }
 
         manifest.files = files;
         manifest.is_valid_pack = true;
-        manifest
-    }
 
-    fn read_null_terminated_string<R: Read>(reader: &mut R) -> std::io::Result<String> {
-        let mut bytes = Vec::with_capacity(64);
-        let mut buf = [0u8; 1];
-        loop {
-            reader.read_exact(&mut buf)?;
-            if buf[0] == 0 {
-                break;
-            }
-            bytes.push(buf[0]);
-            if bytes.len() > 1024 {
-                // Safety limit for malformed strings
-                break;
-            }
+        // Cache manifest in RAM
+        if mtime > 0 {
+            let mut cache_guard = MANIFEST_CACHE.lock().unwrap();
+            let cache = cache_guard.get_or_insert_with(HashMap::new);
+            cache.insert(path_str, (mtime, manifest.clone()));
         }
-        Ok(String::from_utf8_lossy(&bytes).to_string())
+
+        manifest
     }
 
     /// High-performance conflict matrix analysis across all active mods.
     pub fn analyze_conflicts(active_mods: &[Mod]) -> ConflictAnalysisResult {
-        // Map: normalized_internal_path -> Vec<(load_order_index, mod_name, mod_id, is_movie)>
         let mut file_map: HashMap<String, Vec<(usize, String, String, bool)>> = HashMap::new();
-        let mut manifests: HashMap<String, PackedFileManifest> = HashMap::new();
         let mut summaries: HashMap<String, ModConflictSummary> = HashMap::new();
 
-        // 1. Parse all active pack files
+        // 1. Parse all active pack files using fast bulk index reading
         for (i, m) in active_mods.iter().enumerate() {
-            let load_order_index = i + 1; // 1-based index
+            let load_order_index = i + 1;
             let path = Path::new(&m.real_path);
 
             let manifest = if path.is_file() {
@@ -179,7 +219,6 @@ impl PackParser {
 
             let is_movie = manifest.pack_type == PackType::Movie;
 
-            // Initialize summary for this mod
             summaries.insert(
                 m.name.clone(),
                 ModConflictSummary {
@@ -196,8 +235,6 @@ impl PackParser {
                     .or_default()
                     .push((load_order_index, m.name.clone(), m.id.clone(), is_movie));
             }
-
-            manifests.insert(m.name.clone(), manifest);
         }
 
         let mut detailed_conflicts = Vec::new();
@@ -210,7 +247,6 @@ impl PackParser {
                 continue;
             }
 
-            // Determine winner: Top-most in load order (lowest index), or Movie pack
             let movie_winner = occurrences.iter().find(|o| o.3);
             let (winner_idx, winner_name, _winner_id, _) = movie_winner.unwrap_or(&occurrences[0]);
 
@@ -234,7 +270,6 @@ impl PackParser {
                 ConflictSeverity::HarmlessMerge
             };
 
-            // For every other mod that shares this file, record the collision
             for (idx, name, _id, _) in &occurrences {
                 if name == winner_name {
                     continue;
@@ -255,7 +290,6 @@ impl PackParser {
                     is_identical_db_table: is_db,
                 });
 
-                // Update summary for winner
                 if let Some(w_sum) = summaries.get_mut(winner_name) {
                     w_sum.total_conflicts += 1;
                     if is_startpos {
@@ -272,7 +306,6 @@ impl PackParser {
                     }
                 }
 
-                // Update summary for loser
                 if let Some(l_sum) = summaries.get_mut(name) {
                     l_sum.total_conflicts += 1;
                     if is_startpos {
@@ -291,7 +324,11 @@ impl PackParser {
             }
         }
 
-        // Sort detailed conflicts: Fatal startpos first, then scripts, UI, DB
+        // Limit detailed conflicts to top 1000 to keep IPC payload lightweight (<100KB)
+        if detailed_conflicts.len() > 1000 {
+            detailed_conflicts.truncate(1000);
+        }
+
         detailed_conflicts.sort_by_key(|c| match c.severity {
             ConflictSeverity::FatalStartpos => 0,
             ConflictSeverity::ScriptOverride => 1,
@@ -328,4 +365,3 @@ mod tests {
         assert!(result.detailed_conflicts.is_empty());
     }
 }
-

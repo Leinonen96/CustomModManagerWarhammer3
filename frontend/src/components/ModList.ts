@@ -63,7 +63,7 @@ export class ModListManager {
         });
         store.subscribe('SEARCH_CHANGED', () => this.applyFilters());
         store.subscribe('CONFLICTS_CHANGED', () => {
-            if (!this.isInternalDrag) this.render();
+            this.updateConflictBadges();
         });
         store.subscribe('INSPECTOR_CHANGED', () => {
             this.updateInspectedHighlight();
@@ -85,7 +85,60 @@ export class ModListManager {
             } catch (err) {
                 console.warn('Conflict analysis failed:', err);
             }
-        }, 120);
+        }, 200);
+    }
+
+    private updateConflictBadges(): void {
+        const conflictData = store.getConflictAnalysis();
+        const summaries = conflictData?.summaries || {};
+
+        const cards = this.activeContainer.querySelectorAll('.mod-item');
+        cards.forEach(card => {
+            const el = card as HTMLElement;
+            const name = el.dataset.name || '';
+            const id = el.dataset.id || '';
+            const summary = summaries[name] || (id ? summaries[id] : null);
+
+            const metaEl = el.querySelector('.mod-meta');
+            if (!metaEl) return;
+
+            let badgeGroup = metaEl.querySelector('.conflict-badge-group') as HTMLElement;
+            if (!summary || summary.total_conflicts === 0) {
+                if (badgeGroup) badgeGroup.remove();
+                return;
+            }
+
+            let badgesHtml = '';
+            if (summary.fatal_startpos_count > 0) {
+                badgesHtml += `<span class="conflict-badge badge-fatal" title="Fatal Startpos Collision: ${summary.fatal_startpos_count} file(s)">❌ STARTPOS</span>`;
+            }
+            const won = summary.script_overrides_won + summary.ui_overrides_won;
+            if (won > 0) {
+                badgesHtml += `<span class="conflict-badge badge-won" title="Overrides ${won} script/UI file(s) in lower mods">▲ ${won}</span>`;
+            }
+            const lost = summary.script_overrides_lost + summary.ui_overrides_lost;
+            if (lost > 0) {
+                badgesHtml += `<span class="conflict-badge badge-lost" title="Overridden by higher mods in ${lost} script/UI file(s)">▼ ${lost}</span>`;
+            }
+            if (summary.is_movie_pack) {
+                badgesHtml += `<span class="conflict-badge badge-movie" title="Movie Pack: Auto-loaded first by engine">🎬 MOVIE</span>`;
+            }
+            if (summary.missing_dependencies && summary.missing_dependencies.length > 0) {
+                badgesHtml += `<span class="conflict-badge badge-dep" title="Missing ${summary.missing_dependencies.length} prerequisite mod(s)">⚠️ DEP</span>`;
+            }
+
+            if (!badgesHtml) {
+                if (badgeGroup) badgeGroup.remove();
+                return;
+            }
+
+            if (!badgeGroup) {
+                badgeGroup = document.createElement('div');
+                badgeGroup.className = 'conflict-badge-group';
+                metaEl.appendChild(badgeGroup);
+            }
+            badgeGroup.innerHTML = badgesHtml;
+        });
     }
 
     public render(): void {
