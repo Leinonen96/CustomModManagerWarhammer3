@@ -1,11 +1,12 @@
 /**
- * Mod list manager integrating SortableJS with instant number injection and quick actions.
+ * Mod list manager integrating SortableJS, async conflict indexing, and inspector highlights.
  */
 import Sortable from 'sortablejs';
 import { store } from '../state/store';
 import { Mod } from '../types';
 import { createModCard, ModCardCallbacks } from './ModCard';
 import { Toast } from './Toast';
+import { analyzeLoadOrderConflicts } from '../api/conflictApi';
 
 export class ModListManager {
     private inactiveContainer: HTMLElement;
@@ -15,6 +16,7 @@ export class ModListManager {
     private sortableInactive: Sortable | null = null;
     private sortableActive: Sortable | null = null;
     private isInternalDrag: boolean = false;
+    private conflictDebounceTimer: any = null;
 
     constructor(inactiveContainerId: string, activeContainerId: string) {
         this.inactiveContainer = document.getElementById(inactiveContainerId) as HTMLElement;
@@ -38,6 +40,7 @@ export class ModListManager {
                 this.isInternalDrag = true;
                 this.syncActiveModsFromDom();
                 this.isInternalDrag = false;
+                this.triggerConflictAnalysis();
             }
         };
 
@@ -56,8 +59,33 @@ export class ModListManager {
         });
         store.subscribe('ACTIVE_MODS_CHANGED', () => {
             if (!this.isInternalDrag) this.render();
+            this.triggerConflictAnalysis();
         });
         store.subscribe('SEARCH_CHANGED', () => this.applyFilters());
+        store.subscribe('CONFLICTS_CHANGED', () => {
+            if (!this.isInternalDrag) this.render();
+        });
+        store.subscribe('INSPECTOR_CHANGED', () => {
+            this.updateInspectedHighlight();
+        });
+    }
+
+    public triggerConflictAnalysis(): void {
+        clearTimeout(this.conflictDebounceTimer);
+        this.conflictDebounceTimer = setTimeout(async () => {
+            const activeMods = store.getActiveMods();
+            if (activeMods.length === 0) {
+                store.setConflictAnalysis(null);
+                return;
+            }
+
+            try {
+                const result = await analyzeLoadOrderConflicts(activeMods);
+                store.setConflictAnalysis(result);
+            } catch (err) {
+                console.warn('Conflict analysis failed:', err);
+            }
+        }, 120);
     }
 
     public render(): void {
@@ -72,7 +100,8 @@ export class ModListManager {
             onMoveToTop: (mod) => this.moveModToPosition(mod, 1),
             onMoveToBottom: (mod) => this.moveModToPosition(mod, activeMods.length),
             onDeactivate: (mod) => this.deactivateMod(mod),
-            onActivate: (mod, pos) => this.activateMod(mod, pos)
+            onActivate: (mod, pos) => this.activateMod(mod, pos),
+            onInspect: (mod) => store.setInspectedMod(mod)
         };
 
         // Render Inactive mods
@@ -93,6 +122,21 @@ export class ModListManager {
 
         this.updateCounts(inactiveMods.length, activeMods.length);
         this.applyFilters();
+    }
+
+    private updateInspectedHighlight(): void {
+        const inspectedMod = store.getInspectedMod();
+        const allCards = document.querySelectorAll('.mod-item');
+        allCards.forEach(c => {
+            const cardEl = c as HTMLElement;
+            const name = cardEl.dataset.name;
+            const id = cardEl.dataset.id;
+            if (inspectedMod && (name === inspectedMod.name || (id && id === inspectedMod.id))) {
+                cardEl.classList.add('mod-item-inspected');
+            } else {
+                cardEl.classList.remove('mod-item-inspected');
+            }
+        });
     }
 
     public moveModToPosition(mod: Mod, targetPos: number): void {

@@ -6,6 +6,7 @@ import { store } from '../state/store';
 import { fetchPresetsList, fetchPresetDetails, savePreset, deletePreset } from '../api/presetApi';
 import { applyLoadOrder } from '../api/loadOrderApi';
 import { saveConfig } from '../api/configApi';
+import { autoSortDependencies } from '../api/conflictApi';
 import { CustomSelect } from './CustomSelect';
 import { SettingsModal } from './SettingsModal';
 import { Toast } from './Toast';
@@ -17,6 +18,8 @@ export class HeaderControls {
     private loadPresetBtn!: HTMLButtonElement;
     private savePresetBtn!: HTMLButtonElement;
     private deletePresetBtn!: HTMLButtonElement;
+    private autoSortBtn!: HTMLButtonElement;
+    private toggleInspectorBtn!: HTMLButtonElement;
     private settingsBtn!: HTMLButtonElement;
     private applyBtn!: HTMLButtonElement;
     private settingsModal: SettingsModal;
@@ -34,6 +37,8 @@ export class HeaderControls {
         this.loadPresetBtn = document.getElementById('btn-load-preset') as HTMLButtonElement;
         this.savePresetBtn = document.getElementById('btn-save-preset') as HTMLButtonElement;
         this.deletePresetBtn = document.getElementById('btn-delete-preset') as HTMLButtonElement;
+        this.autoSortBtn = document.getElementById('btn-auto-sort') as HTMLButtonElement;
+        this.toggleInspectorBtn = document.getElementById('btn-toggle-inspector') as HTMLButtonElement;
         this.settingsBtn = document.getElementById('btn-open-settings') as HTMLButtonElement;
         this.applyBtn = document.getElementById('btn-apply-order') as HTMLButtonElement;
     }
@@ -49,6 +54,35 @@ export class HeaderControls {
         this.loadPresetBtn.onclick = () => this.handleLoadPreset();
         this.savePresetBtn.onclick = () => this.handleSavePreset();
         this.deletePresetBtn.onclick = () => this.handleDeletePreset();
+        
+        if (this.autoSortBtn) {
+            this.autoSortBtn.onclick = async () => {
+                const active = store.getActiveMods();
+                if (active.length <= 1) {
+                    Toast.info('Need at least 2 active mods to auto-sort dependencies.');
+                    return;
+                }
+                try {
+                    this.autoSortBtn.disabled = true;
+                    this.autoSortBtn.innerText = '⚡ Sorting...';
+                    const sorted = await autoSortDependencies(active);
+                    store.setActiveMods(sorted);
+                    Toast.success(`Auto-sorted ${sorted.length} active mods by dependency DAG!`);
+                } catch (err: any) {
+                    Toast.error(`Auto-sort failed: ${err.message || err}`);
+                } finally {
+                    this.autoSortBtn.disabled = false;
+                    this.autoSortBtn.innerText = '⚡ Auto-Sort';
+                }
+            };
+        }
+
+        if (this.toggleInspectorBtn) {
+            this.toggleInspectorBtn.onclick = () => {
+                store.toggleDrawer();
+            };
+        }
+
         this.settingsBtn.onclick = () => this.settingsModal.openAndLoad();
         this.applyBtn.onclick = () => this.handleApplyLoadOrder();
     }

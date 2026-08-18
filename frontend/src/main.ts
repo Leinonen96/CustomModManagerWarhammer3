@@ -12,6 +12,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { ModListManager } from './components/ModList';
 import { HeaderControls } from './components/HeaderControls';
 import { SearchController } from './components/SearchBar';
+import { InspectorDrawer } from './components/InspectorDrawer';
 import { Toast } from './components/Toast';
 
 class App {
@@ -22,6 +23,7 @@ class App {
     private modListManager!: ModListManager;
     private headerControls!: HeaderControls;
     private searchController!: SearchController;
+    private inspectorDrawer!: InspectorDrawer;
 
     public async init(): Promise<void> {
         // Initialize frameless window titlebar, resizer & zoom controller
@@ -33,6 +35,7 @@ class App {
         this.headerControls = new HeaderControls(this.settingsModal);
         this.modListManager = new ModListManager('inactive-mods', 'active-mods');
         this.searchController = new SearchController('search-inactive', 'search-active');
+        this.inspectorDrawer = new InspectorDrawer();
 
         try {
             const config = await fetchConfig();
@@ -74,6 +77,9 @@ class App {
             } else if (presets.length > 0) {
                 await this.headerControls.loadPresetByName(presets[0], true);
             }
+
+            // Initial conflict indexing
+            this.modListManager.triggerConflictAnalysis();
 
             if (mods.length === 0) {
                 Toast.warning('No mods found in the configured workshop directory. Check Settings.');

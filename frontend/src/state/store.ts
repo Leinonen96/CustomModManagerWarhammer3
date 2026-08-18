@@ -1,7 +1,7 @@
 /**
  * Central Reactive Application State Store.
  */
-import { Mod, AppConfig } from '../types';
+import { Mod, AppConfig, ConflictAnalysisResult } from '../types';
 
 export type StoreEvent = 
     | 'MODS_CHANGED'
@@ -10,7 +10,10 @@ export type StoreEvent =
     | 'PRESETS_CHANGED'
     | 'SELECTED_PRESET_CHANGED'
     | 'SEARCH_CHANGED'
-    | 'STATUS_CHANGED';
+    | 'STATUS_CHANGED'
+    | 'CONFLICTS_CHANGED'
+    | 'INSPECTOR_CHANGED'
+    | 'DRAWER_TOGGLED';
 
 type Listener = () => void;
 
@@ -23,6 +26,13 @@ class AppStore {
     private searchInactive: string = '';
     private searchActive: string = '';
     private isApplying: boolean = false;
+
+    // Conflict & Inspector State
+    private conflictAnalysis: ConflictAnalysisResult | null = null;
+    private inspectedMod: Mod | null = null;
+    private isDrawerOpen: boolean = false;
+    private drawerActiveTab: 'overview' | 'conflicts' | 'dependencies' = 'overview';
+
     private listeners: Map<StoreEvent, Set<Listener>> = new Map();
 
     constructor() {
@@ -34,7 +44,10 @@ class AppStore {
             'PRESETS_CHANGED',
             'SELECTED_PRESET_CHANGED',
             'SEARCH_CHANGED',
-            'STATUS_CHANGED'
+            'STATUS_CHANGED',
+            'CONFLICTS_CHANGED',
+            'INSPECTOR_CHANGED',
+            'DRAWER_TOGGLED'
         ];
         events.forEach(e => this.listeners.set(e, new Set()));
     }
@@ -127,6 +140,53 @@ class AppStore {
     public setIsApplying(applying: boolean): void {
         this.isApplying = applying;
         this.emit('STATUS_CHANGED');
+    }
+
+    // --- Conflict & Inspector Methods ---
+
+    public getConflictAnalysis(): ConflictAnalysisResult | null {
+        return this.conflictAnalysis;
+    }
+
+    public setConflictAnalysis(result: ConflictAnalysisResult | null): void {
+        this.conflictAnalysis = result;
+        this.emit('CONFLICTS_CHANGED');
+    }
+
+    public getInspectedMod(): Mod | null {
+        return this.inspectedMod;
+    }
+
+    public setInspectedMod(mod: Mod | null): void {
+        this.inspectedMod = mod;
+        this.emit('INSPECTOR_CHANGED');
+        if (mod && !this.isDrawerOpen) {
+            this.setDrawerOpen(true);
+        }
+    }
+
+    public getIsDrawerOpen(): boolean {
+        return this.isDrawerOpen;
+    }
+
+    public setDrawerOpen(open: boolean): void {
+        if (this.isDrawerOpen !== open) {
+            this.isDrawerOpen = open;
+            this.emit('DRAWER_TOGGLED');
+        }
+    }
+
+    public toggleDrawer(): void {
+        this.setDrawerOpen(!this.isDrawerOpen);
+    }
+
+    public getDrawerTab(): 'overview' | 'conflicts' | 'dependencies' {
+        return this.drawerActiveTab;
+    }
+
+    public setDrawerTab(tab: 'overview' | 'conflicts' | 'dependencies'): void {
+        this.drawerActiveTab = tab;
+        this.emit('INSPECTOR_CHANGED');
     }
 }
 

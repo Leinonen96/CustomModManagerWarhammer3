@@ -1,10 +1,11 @@
 /**
- * Mod item card builder with interactive order badges and quick-action buttons.
+ * Mod item card builder with interactive order badges, conflict indicators, and quick actions.
  */
 import { Mod } from '../types';
 import { tauriInvoke } from '../api/client';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { showInputDialog } from './Modal';
+import { store } from '../state/store';
 
 export interface ModCardCallbacks {
     onMoveToPosition?: (mod: Mod, targetPos: number) => void;
@@ -12,6 +13,7 @@ export interface ModCardCallbacks {
     onMoveToBottom?: (mod: Mod) => void;
     onDeactivate?: (mod: Mod) => void;
     onActivate?: (mod: Mod, position: 'top' | 'bottom' | number) => void;
+    onInspect?: (mod: Mod) => void;
 }
 
 export function createModCard(
@@ -19,72 +21,111 @@ export function createModCard(
     orderNumber: number | null = null,
     totalActive: number = 0,
     callbacks?: ModCardCallbacks
-): HTMLDivElement {
+): HTMLElement {
     const div = document.createElement('div');
     div.className = 'mod-item';
-    div.dataset.id = mod.id;
     div.dataset.name = mod.name;
+    div.dataset.id = mod.id;
 
-    const steamUrl = mod.url || `https://steamcommunity.com/sharedfiles/filedetails/?id=${mod.id}`;
-    const displayTitle = mod.title || mod.name.replace(/\.pack$/i, '').replace(/_/g, ' ');
-    const displayOrder = orderNumber !== null ? orderNumber.toString() : '-';
-    
-    // Efficiently convert local filesystem path to Tauri Asset URL
-    const thumbSrc = (mod.thumb && mod.thumb.length > 0)
-        ? (mod.thumb.startsWith('/') ? convertFileSrc(mod.thumb) : mod.thumb)
-        : '/static/gemini-svg.svg';
-
-    // Format file size
-    let sizeStr = '';
-    if (mod.file_size_bytes && mod.file_size_bytes > 0) {
-        const mb = (mod.file_size_bytes / (1024 * 1024)).toFixed(1);
-        sizeStr = `<span class="mod-size-badge">${mb} MB</span>`;
+    const inspectedMod = store.getInspectedMod();
+    if (inspectedMod && (inspectedMod.name === mod.name || (inspectedMod.id && inspectedMod.id === mod.id))) {
+        div.classList.add('mod-item-inspected');
     }
 
-    // Action buttons depending on active vs inactive
+    // Format file size
+    const sizeMb = mod.file_size_bytes
+        ? (mod.file_size_bytes / (1024 * 1024)).toFixed(1) + ' MB'
+        : '';
+
+    // Fast image conversion via Tauri protocol
+    let finalThumbSrc = '/static/gemini-svg.svg';
+    if (mod.thumb) {
+        if (mod.thumb.startsWith('/') || mod.thumb.includes(':\\')) {
+            try {
+                finalThumbSrc = convertFileSrc(mod.thumb);
+            } catch {
+                finalThumbSrc = mod.thumb;
+            }
+        } else {
+            finalThumbSrc = mod.thumb;
+        }
+    }
+
+    const isOrderActive = orderNumber !== null;
+    const orderClass = isOrderActive ? 'order-num order-active order-editable' : 'order-num';
+    const orderText = isOrderActive ? orderNumber.toString() : '-';
+
+    // Conflict badges
+    let conflictBadgesHtml = '';
+    const conflictData = store.getConflictAnalysis();
+    if (conflictData && conflictData.summaries) {
+        const summary = conflictData.summaries[mod.name] || (mod.id ? conflictData.summaries[mod.id] : null);
+        if (summary) {
+            if (summary.fatal_startpos_count > 0) {
+                conflictBadgesHtml += `<span class="conflict-badge badge-fatal" title="Fatal Startpos Collision: ${summary.fatal_startpos_count} file(s)">❌ STARTPOS</span>`;
+            }
+            const won = summary.script_overrides_won + summary.ui_overrides_won;
+            if (won > 0) {
+                conflictBadgesHtml += `<span class="conflict-badge badge-won" title="Overrides ${won} script/UI file(s) in lower mods">▲ ${won}</span>`;
+            }
+            const lost = summary.script_overrides_lost + summary.ui_overrides_lost;
+            if (lost > 0) {
+                conflictBadgesHtml += `<span class="conflict-badge badge-lost" title="Overridden by higher mods in ${lost} script/UI file(s)">▼ ${lost}</span>`;
+            }
+            if (summary.is_movie_pack || mod.is_movie_pack) {
+                conflictBadgesHtml += `<span class="conflict-badge badge-movie" title="Movie Pack: Auto-loaded first by engine">🎬 MOVIE</span>`;
+            }
+            if (summary.missing_dependencies && summary.missing_dependencies.length > 0) {
+                conflictBadgesHtml += `<span class="conflict-badge badge-dep" title="Missing ${summary.missing_dependencies.length} prerequisite mod(s)">⚠️ DEP</span>`;
+            }
+        }
+    }
+
     let actionsHtml = '';
     if (orderNumber !== null) {
         actionsHtml = `
             <div class="mod-actions">
-                <button type="button" class="card-action-btn btn-action-top" title="Jump to Top (#1)">⤒</button>
-                <button type="button" class="card-action-btn btn-action-bottom" title="Jump to Bottom">⤓</button>
+                <button type="button" class="card-action-btn btn-action-inspect" title="Inspect Pack Manifest & Conflicts">🔍</button>
+                <button type="button" class="card-action-btn btn-action-top" title="Move to Top (Priority #1)">⤒</button>
+                <button type="button" class="card-action-btn btn-action-bottom" title="Move to Bottom (Priority #${totalActive})">⤓</button>
                 <button type="button" class="card-action-btn btn-action-remove" title="Deactivate Mod">✕</button>
             </div>
         `;
     } else {
         actionsHtml = `
             <div class="mod-actions">
-                <button type="button" class="card-action-btn btn-action-add-top" title="Add to Top (#1)">⤒ Top</button>
-                <button type="button" class="card-action-btn btn-action-inject" title="Inject at custom position"># Insert</button>
-                <button type="button" class="card-action-btn btn-action-add" title="Add to Bottom">➕</button>
+                <button type="button" class="card-action-btn btn-action-inspect" title="Inspect Pack Manifest & Contents">🔍</button>
+                <button type="button" class="card-action-btn btn-action-add" title="Add to bottom of Load Order">＋ Bottom</button>
+                <button type="button" class="card-action-btn btn-action-add-top" title="Add to top of Load Order">＋ Top</button>
+                <button type="button" class="card-action-btn btn-action-inject" title="Insert at specific position"># Insert</button>
             </div>
         `;
     }
 
+    const steamUrl = mod.url || `https://steamcommunity.com/sharedfiles/filedetails/?id=${mod.id}`;
+
     div.innerHTML = `
-        <div class="order-num ${orderNumber !== null ? 'order-active order-editable' : ''}" 
-             title="${orderNumber !== null ? 'Click to edit load order number' : ''}">
-             ${displayOrder}
-        </div>
+        <div class="${orderClass}" title="${isOrderActive ? 'Click to change order position' : ''}">${orderText}</div>
         <div class="mod-thumb-container">
-            <img src="${thumbSrc}" alt="${escapeHtml(displayTitle)}" class="mod-thumb" loading="lazy" decoding="async">
+            <img class="mod-thumb" loading="lazy" decoding="async" src="${finalThumbSrc}" alt="${escapeHtml(mod.title || mod.name)}">
         </div>
         <div class="mod-info">
             <div class="mod-name-row">
-                <div class="mod-title" title="${escapeHtml(displayTitle)}">${escapeHtml(displayTitle)}</div>
-                ${sizeStr}
+                <span class="mod-title" title="${escapeHtml(mod.title || mod.name)}">${escapeHtml(mod.title || mod.name)}</span>
+                ${sizeMb ? `<span class="mod-size-badge">${sizeMb}</span>` : ''}
             </div>
-            <div class="mod-filename" title="${escapeHtml(mod.name)}">${escapeHtml(mod.name)}</div>
+            <span class="mod-filename" title="${escapeHtml(mod.name)}">${escapeHtml(mod.name)}</span>
             <div class="mod-meta">
-                <span>ID: ${escapeHtml(mod.id)}</span>
+                <span class="mod-id">ID: ${escapeHtml(mod.id || 'Local')}</span>
                 <span class="meta-dot">&bull;</span>
                 <a href="${steamUrl}" class="steam-link" title="Open Steam Workshop page">View on Steam ↗</a>
+                ${conflictBadgesHtml ? `<div class="conflict-badge-group">${conflictBadgesHtml}</div>` : ''}
             </div>
         </div>
         ${actionsHtml}
     `;
 
-    // Handle Steam link native browser open
+    // Handle Steam link
     const steamLink = div.querySelector('.steam-link') as HTMLAnchorElement;
     if (steamLink) {
         steamLink.onclick = (e) => {
@@ -100,6 +141,19 @@ export function createModCard(
         img.onerror = () => {
             img.src = '/static/gemini-svg.svg';
             img.classList.add('fallback-thumb');
+        };
+    }
+
+    // Handle inspect trigger
+    const inspectBtn = div.querySelector('.btn-action-inspect') as HTMLButtonElement;
+    if (inspectBtn) {
+        inspectBtn.onclick = (e) => {
+            e.stopPropagation();
+            if (callbacks?.onInspect) {
+                callbacks.onInspect(mod);
+            } else {
+                store.setInspectedMod(mod);
+            }
         };
     }
 

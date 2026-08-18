@@ -14,6 +14,57 @@ export interface Mod {
     last_modified?: number;
 }
 
+export type PackType = 'Movie' | 'Boot' | 'Release' | 'Mod' | { Unknown: number };
+
+export type ConflictSeverity = 
+    | 'FatalStartpos' 
+    | 'ScriptOverride' 
+    | 'UIOverride' 
+    | 'DBCollision' 
+    | 'HarmlessMerge';
+
+export interface PackedFileManifest {
+    pack_name: string;
+    pack_path: string;
+    pack_type: PackType;
+    dependencies: string[];
+    files: string[];
+    file_count: number;
+    is_valid_pack: boolean;
+}
+
+export interface FileConflictDetail {
+    internal_path: string;
+    severity: ConflictSeverity;
+    winner_mod: string;
+    winner_index: number;
+    loser_mod: string;
+    loser_index: number;
+    is_identical_db_table: boolean;
+}
+
+export interface ModConflictSummary {
+    mod_name: string;
+    mod_id: string;
+    total_conflicts: number;
+    fatal_startpos_count: number;
+    script_overrides_won: number;
+    script_overrides_lost: number;
+    ui_overrides_won: number;
+    ui_overrides_lost: number;
+    db_collisions: number;
+    conflicting_mod_names: string[];
+    is_movie_pack: boolean;
+    missing_dependencies: string[];
+}
+
+export interface ConflictAnalysisResult {
+    total_conflicts: number;
+    fatal_conflicts: number;
+    summaries: Record<string, ModConflictSummary>;
+    detailed_conflicts: FileConflictDetail[];
+}
+
 export interface AppConfig {
     workshop_dir?: string;
     game_data_dir?: string;
