@@ -1,9 +1,9 @@
 /**
- * Mod discovery and asset API endpoints.
+ * Mod discovery via Tauri v2.
  */
-import { apiFetch } from './client';
+import { tauriInvoke } from './client';
 import { Mod } from '../types';
 
 export async function fetchMods(): Promise<Mod[]> {
-    return apiFetch<Mod[]>('/api/mods');
+    return tauriInvoke<Mod[]>('get_mods');
 }

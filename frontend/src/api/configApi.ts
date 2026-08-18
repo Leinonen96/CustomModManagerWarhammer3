@@ -1,26 +1,34 @@
 /**
- * Configuration and path validation API endpoints.
+ * Configuration and path validation via Tauri v2 commands.
  */
-import { apiFetch } from './client';
+import { tauriInvoke } from './client';
+import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { AppConfig, ConfigValidationResult, PathDetectionResult, ApiResponse } from '../types';
 
 export async function fetchConfig(): Promise<AppConfig> {
-    return apiFetch<AppConfig>('/api/config');
+    return tauriInvoke<AppConfig>('get_config');
 }
 
 export async function saveConfig(config: AppConfig): Promise<ApiResponse> {
-    return apiFetch<ApiResponse>('/api/config', {
-        method: 'POST',
-        body: JSON.stringify(config)
-    });
+    await tauriInvoke('save_config', { config });
+    return { status: 'success', success: true, message: 'Settings saved successfully!' };
 }
 
 export async function validateConfigPaths(): Promise<ApiResponse<ConfigValidationResult>> {
-    return apiFetch<ApiResponse<ConfigValidationResult>>('/api/config/validate');
+    const data = await tauriInvoke<ConfigValidationResult>('validate_paths');
+    return { status: 'success', success: true, data };
 }
 
 export async function autoDetectPaths(): Promise<ApiResponse<PathDetectionResult>> {
-    return apiFetch<ApiResponse<PathDetectionResult>>('/api/config/detect', {
-        method: 'POST'
+    const data = await tauriInvoke<PathDetectionResult>('detect_paths');
+    return { status: 'success', success: true, data };
+}
+
+export async function pickFolder(title = 'Select Directory'): Promise<string | null> {
+    const selected = await openDialog({
+        directory: true,
+        multiple: false,
+        title,
     });
+    return (selected as string) || null;
 }

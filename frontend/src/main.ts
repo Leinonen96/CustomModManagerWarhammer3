@@ -1,5 +1,5 @@
 /**
- * Main application entry point for Warhammer 3 Mod Manager.
+ * Main application entry point for Warhammer 3 Mod Manager (Tauri v2).
  */
 import { store } from './state/store';
 import { fetchConfig } from './api/configApi';
@@ -22,8 +22,6 @@ class App {
         this.modListManager = new ModListManager('inactive-mods', 'active-mods');
         this.searchController = new SearchController('search-inactive', 'search-active');
 
-        this.startHeartbeat();
-
         try {
             const config = await fetchConfig();
             store.setConfig(config);
@@ -36,7 +34,7 @@ class App {
                 return;
             }
 
-            // Load workshop mods
+            // Load workshop mods via Tauri IPC
             const mods = await fetchMods();
             store.setAllMods(mods);
 
@@ -50,16 +48,6 @@ class App {
             console.error('Initialization error:', err);
             Toast.error(`Failed to initialize mod manager: ${err.message}`);
         }
-    }
-
-    private startHeartbeat(): void {
-        // Immediate ping on start
-        fetch('/api/heartbeat', { method: 'POST' }).catch(() => {});
-
-        // Ping backend every 2.5 seconds to maintain active lifecycle
-        setInterval(() => {
-            fetch('/api/heartbeat', { method: 'POST' }).catch(() => {});
-        }, 2500);
     }
 }
 

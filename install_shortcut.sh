@@ -10,7 +10,6 @@ echo "Generating Linux desktop shortcut..."
 ICON_PATH="$DIR/static/gemini-svg.svg"
 if [ ! -f "$ICON_PATH" ]; then
     ICON_PATH="utilities-terminal"
-    echo "Warning: gemini-svg.svg not found in project root. Using generic fallback icon."
 fi
 
 # Generate the .desktop configuration file
@@ -18,11 +17,11 @@ cat <<EOF > "$SHORTCUT_PATH"
 [Desktop Entry]
 Type=Application
 Name=WH3 Mod Manager
-Comment=Lightweight Mod Manager for Total War: WARHAMMER III
+Comment=Native Mod Manager for Total War: WARHAMMER III
 Exec="$DIR/start.sh"
 Path=$DIR
 Icon=$ICON_PATH
-Terminal=true
+Terminal=false
 Categories=Game;Utility;
 EOF
 

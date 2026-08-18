@@ -1,15 +1,18 @@
 /**
- * Settings modal with live path validation and auto-detection.
+ * Settings modal with live path validation, auto-detection, and native directory browsing.
  */
 import { Modal } from './Modal';
 import { store } from '../state/store';
-import { fetchConfig, saveConfig, validateConfigPaths, autoDetectPaths } from '../api/configApi';
+import { fetchConfig, saveConfig, validateConfigPaths, autoDetectPaths, pickFolder } from '../api/configApi';
 import { Toast } from './Toast';
 
 export class SettingsModal extends Modal {
     private workshopInput!: HTMLInputElement;
     private dataInput!: HTMLInputElement;
     private scriptInput!: HTMLInputElement;
+    private browseWorkshopBtn!: HTMLButtonElement;
+    private browseDataBtn!: HTMLButtonElement;
+    private browseScriptBtn!: HTMLButtonElement;
     private autoDetectBtn!: HTMLButtonElement;
     private saveBtn!: HTMLButtonElement;
     private cancelBtn!: HTMLButtonElement;
@@ -26,17 +29,18 @@ export class SettingsModal extends Modal {
                 <h2>⚙️ Mod Manager Settings</h2>
                 <button class="btn-close" id="settings-close-icon">&times;</button>
             </div>
-            <p class="modal-desc">Configure the absolute paths for your Warhammer 3 installation and Proton/Steam user scripts.</p>
+            <p class="modal-desc">Configure the paths for your Warhammer 3 installation and Proton/Steam user scripts.</p>
             
             <div class="form-group">
                 <div class="form-label-row">
                     <label for="config-workshop">Workshop Directory</label>
                     <span id="badge-workshop" class="status-badge">Checking...</span>
                 </div>
-                <div class="tooltip-container">
-                    <input type="text" id="config-workshop" placeholder="e.g., .../steamapps/workshop/content/1142710">
-                    <small class="help-text">Where Steam downloads subscribed .pack files and preview images.</small>
+                <div class="input-with-browse">
+                    <input type="text" id="config-workshop" placeholder=".../steamapps/workshop/content/1142710">
+                    <button type="button" class="btn-browse" id="btn-browse-workshop" title="Browse for Workshop folder">📁 Browse</button>
                 </div>
+                <small class="help-text">Where Steam downloads subscribed .pack files and preview images.</small>
             </div>
 
             <div class="form-group">
@@ -44,10 +48,11 @@ export class SettingsModal extends Modal {
                     <label for="config-data">Game Data Directory</label>
                     <span id="badge-data" class="status-badge">Checking...</span>
                 </div>
-                <div class="tooltip-container">
-                    <input type="text" id="config-data" placeholder="e.g., .../Total War WARHAMMER III/data">
-                    <small class="help-text">The game's actual data folder where mod symlinks are placed.</small>
+                <div class="input-with-browse">
+                    <input type="text" id="config-data" placeholder=".../Total War WARHAMMER III/data">
+                    <button type="button" class="btn-browse" id="btn-browse-data" title="Browse for Game Data folder">📁 Browse</button>
                 </div>
+                <small class="help-text">The game's actual data folder where mod symlinks are placed.</small>
             </div>
 
             <div class="form-group">
@@ -55,23 +60,27 @@ export class SettingsModal extends Modal {
                     <label for="config-script">User Script File (user.script.txt)</label>
                     <span id="badge-script" class="status-badge">Checking...</span>
                 </div>
-                <div class="tooltip-container">
-                    <input type="text" id="config-script" placeholder="e.g., .../scripts/user.script.txt">
-                    <small class="help-text">The script file that commands the game engine's active load order.</small>
+                <div class="input-with-browse">
+                    <input type="text" id="config-script" placeholder=".../scripts/user.script.txt">
+                    <button type="button" class="btn-browse" id="btn-browse-script" title="Browse for Scripts folder">📁 Browse</button>
                 </div>
+                <small class="help-text">The script file that commands the game engine's active load order.</small>
             </div>
 
             <div class="modal-buttons">
                 <button type="button" class="btn-secondary" id="btn-autodetect">🔍 Auto-Detect Paths</button>
                 <div style="flex-grow: 1;"></div>
                 <button type="button" class="btn-secondary" id="close-modal-btn">Cancel</button>
-                <button type="button" class="btn-primary" id="btn-save-settings">Save & Reload</button>
+                <button type="button" class="btn-primary" id="btn-save-settings">Save & Apply</button>
             </div>
         `;
 
         this.workshopInput = this.modalBox.querySelector('#config-workshop') as HTMLInputElement;
         this.dataInput = this.modalBox.querySelector('#config-data') as HTMLInputElement;
         this.scriptInput = this.modalBox.querySelector('#config-script') as HTMLInputElement;
+        this.browseWorkshopBtn = this.modalBox.querySelector('#btn-browse-workshop') as HTMLButtonElement;
+        this.browseDataBtn = this.modalBox.querySelector('#btn-browse-data') as HTMLButtonElement;
+        this.browseScriptBtn = this.modalBox.querySelector('#btn-browse-script') as HTMLButtonElement;
         this.autoDetectBtn = this.modalBox.querySelector('#btn-autodetect') as HTMLButtonElement;
         this.saveBtn = this.modalBox.querySelector('#btn-save-settings') as HTMLButtonElement;
         this.cancelBtn = this.modalBox.querySelector('#close-modal-btn') as HTMLButtonElement;
@@ -81,6 +90,32 @@ export class SettingsModal extends Modal {
         this.cancelBtn.onclick = () => this.close();
         const closeIcon = this.modalBox.querySelector('#settings-close-icon') as HTMLElement;
         if (closeIcon) closeIcon.onclick = () => this.close();
+
+        // Native folder browsing handlers
+        this.browseWorkshopBtn.onclick = async () => {
+            const path = await pickFolder('Select Steam Workshop (1142710) Directory');
+            if (path) {
+                this.workshopInput.value = path;
+                this.updateValidationBadges();
+            }
+        };
+
+        this.browseDataBtn.onclick = async () => {
+            const path = await pickFolder('Select Total War WARHAMMER III data Directory');
+            if (path) {
+                this.dataInput.value = path;
+                this.updateValidationBadges();
+            }
+        };
+
+        this.browseScriptBtn.onclick = async () => {
+            const path = await pickFolder('Select Warhammer3 scripts Directory');
+            if (path) {
+                const scriptPath = path.endsWith('.txt') ? path : `${path}/user.script.txt`;
+                this.scriptInput.value = scriptPath;
+                this.updateValidationBadges();
+            }
+        };
 
         this.autoDetectBtn.onclick = async () => {
             this.autoDetectBtn.disabled = true;
@@ -94,7 +129,7 @@ export class SettingsModal extends Modal {
                     Toast.success('Auto-detected Warhammer 3 Steam paths!');
                     this.updateValidationBadges();
                 } else {
-                    Toast.warning('Could not automatically find all paths. Please enter them manually.');
+                    Toast.warning('Could not automatically find all paths. Please use "Browse" to set them.');
                 }
             } catch (err: any) {
                 Toast.error(`Detection failed: ${err.message}`);
@@ -122,7 +157,6 @@ export class SettingsModal extends Modal {
                 store.setConfig(config);
                 Toast.success('Settings saved successfully!');
                 this.close();
-                setTimeout(() => location.reload(), 600);
             } catch (err: any) {
                 Toast.error(`Failed to save settings: ${err.message}`);
             } finally {
@@ -161,7 +195,7 @@ export class SettingsModal extends Modal {
             this.setBadge('badge-script', isScriptValid, 
                 val.script_file.exists ? 'Valid' : (val.script_file.parent_exists ? 'Parent Exists' : 'Not Found'));
         } catch {
-            // Silently ignore during typing
+            // Silently ignore
         }
     }
 
