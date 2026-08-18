@@ -1,16 +1,18 @@
 /**
  * Header controls managing presets, settings triggers, and applying load orders.
+ * Integrated with 100% custom studio CustomSelect (Zero OS default popups).
  */
 import { store } from '../state/store';
 import { fetchPresetsList, fetchPresetDetails, savePreset, deletePreset } from '../api/presetApi';
 import { applyLoadOrder } from '../api/loadOrderApi';
 import { saveConfig } from '../api/configApi';
+import { CustomSelect } from './CustomSelect';
 import { SettingsModal } from './SettingsModal';
 import { Toast } from './Toast';
 import { showConfirmDialog } from './Modal';
 
 export class HeaderControls {
-    private presetSelect!: HTMLSelectElement;
+    private presetSelect!: CustomSelect;
     private presetNameInput!: HTMLInputElement;
     private loadPresetBtn!: HTMLButtonElement;
     private savePresetBtn!: HTMLButtonElement;
@@ -27,7 +29,7 @@ export class HeaderControls {
     }
 
     private bindElements(): void {
-        this.presetSelect = document.getElementById('preset-select') as HTMLSelectElement;
+        this.presetSelect = new CustomSelect('preset-select-container');
         this.presetNameInput = document.getElementById('preset-name') as HTMLInputElement;
         this.loadPresetBtn = document.getElementById('btn-load-preset') as HTMLButtonElement;
         this.savePresetBtn = document.getElementById('btn-save-preset') as HTMLButtonElement;
@@ -37,8 +39,7 @@ export class HeaderControls {
     }
 
     private bindEvents(): void {
-        this.presetSelect.addEventListener('change', () => {
-            const selected = this.presetSelect.value;
+        this.presetSelect.onChange((selected) => {
             store.setSelectedPreset(selected);
             if (selected) {
                 this.presetNameInput.value = selected;
@@ -55,7 +56,7 @@ export class HeaderControls {
     private bindStore(): void {
         store.subscribe('PRESETS_CHANGED', () => this.renderPresetDropdown());
         store.subscribe('SELECTED_PRESET_CHANGED', () => {
-            this.presetSelect.value = store.getSelectedPreset();
+            this.presetSelect.setValue(store.getSelectedPreset(), false);
         });
     }
 
@@ -71,15 +72,7 @@ export class HeaderControls {
     private renderPresetDropdown(): void {
         const presets = store.getPresets();
         const current = store.getSelectedPreset();
-
-        this.presetSelect.innerHTML = '<option value="">-- Select Preset --</option>';
-        presets.forEach(p => {
-            const opt = document.createElement('option');
-            opt.value = p;
-            opt.textContent = p;
-            if (p === current) opt.selected = true;
-            this.presetSelect.appendChild(opt);
-        });
+        this.presetSelect.setOptions(['', ...presets], current);
     }
 
     public async loadPresetByName(name: string, silent = false): Promise<boolean> {
@@ -101,7 +94,7 @@ export class HeaderControls {
             store.setActiveMods(loadedActiveMods);
             store.setSelectedPreset(name);
             this.presetNameInput.value = name;
-            this.presetSelect.value = name;
+            this.presetSelect.setValue(name, false);
 
             // Persist as last preset
             const config = store.getConfig();
@@ -125,7 +118,7 @@ export class HeaderControls {
     }
 
     private async handleLoadPreset(): Promise<void> {
-        const name = this.presetSelect.value;
+        const name = this.presetSelect.getValue();
         if (!name) {
             Toast.info('Please select a preset from the dropdown to load.');
             return;
@@ -160,7 +153,7 @@ export class HeaderControls {
     }
 
     private async handleDeletePreset(): Promise<void> {
-        const name = this.presetSelect.value;
+        const name = this.presetSelect.getValue();
         if (!name) {
             Toast.info('Please select a preset to delete.');
             return;

@@ -1,5 +1,6 @@
 /**
- * Reusable modal and confirmation dialog component.
+ * Reusable modal, custom confirmation dialog, and custom prompt dialog.
+ * 100% Custom Dark Studio Elements - Zero OS Native Popups.
  */
 
 export class Modal {
@@ -50,6 +51,9 @@ export class Modal {
     }
 }
 
+/**
+ * Custom Studio Confirmation Dialog
+ */
 export function showConfirmDialog(
     title: string,
     message: string,
@@ -68,9 +72,9 @@ export function showConfirmDialog(
         overlay.innerHTML = `
             <div class="modal confirm-modal">
                 <div class="modal-header">
-                    <h2 style="color: var(--color-danger);">${title}</h2>
+                    <h2 style="color: var(--color-danger);">${escapeHtml(title)}</h2>
                 </div>
-                <p class="modal-desc" style="margin-top: 8px;">${message}</p>
+                <p class="modal-desc" style="margin-top: 8px;">${escapeHtml(message)}</p>
                 <div class="modal-buttons" style="justify-content: flex-end;">
                     <button type="button" class="btn btn-secondary" id="confirm-cancel-btn">${cancelText}</button>
                     <button type="button" class="btn btn-danger" id="confirm-ok-btn">${confirmText}</button>
@@ -82,10 +86,92 @@ export function showConfirmDialog(
 
         const cleanup = (result: boolean) => {
             overlay!.style.display = 'none';
+            document.removeEventListener('keydown', keyHandler);
             resolve(result);
         };
 
+        const keyHandler = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') cleanup(false);
+            if (e.key === 'Enter') cleanup(true);
+        };
+
+        document.addEventListener('keydown', keyHandler);
         document.getElementById('confirm-cancel-btn')!.onclick = () => cleanup(false);
         document.getElementById('confirm-ok-btn')!.onclick = () => cleanup(true);
     });
+}
+
+/**
+ * Custom Studio Input / Numeric Injection Dialog (Replaces native prompt())
+ */
+export function showInputDialog(options: {
+    title: string;
+    message: string;
+    defaultValue?: string | number;
+    inputType?: 'number' | 'text';
+    min?: number;
+    max?: number;
+    confirmText?: string;
+    cancelText?: string;
+}): Promise<string | null> {
+    return new Promise((resolve) => {
+        let overlay = document.getElementById('input-modal-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'input-modal-overlay';
+            overlay.className = 'modal-overlay';
+            document.body.appendChild(overlay);
+        }
+
+        const defVal = options.defaultValue !== undefined ? options.defaultValue.toString() : '1';
+        const type = options.inputType || 'number';
+        const minAttr = options.min !== undefined ? `min="${options.min}"` : '';
+        const maxAttr = options.max !== undefined ? `max="${options.max}"` : '';
+
+        overlay.innerHTML = `
+            <div class="modal confirm-modal">
+                <div class="modal-header">
+                    <h2 style="color: var(--color-primary);">${escapeHtml(options.title)}</h2>
+                </div>
+                <p class="modal-desc" style="margin-top: 8px;">${escapeHtml(options.message)}</p>
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <input type="${type}" id="custom-dialog-input" class="text-input" style="width: 100%;" 
+                           value="${defVal}" ${minAttr} ${maxAttr}>
+                </div>
+                <div class="modal-buttons" style="justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" id="input-cancel-btn">${options.cancelText || 'Cancel'}</button>
+                    <button type="button" class="btn btn-primary" id="input-ok-btn">${options.confirmText || 'Inject'}</button>
+                </div>
+            </div>
+        `;
+
+        overlay.style.display = 'flex';
+
+        const input = document.getElementById('custom-dialog-input') as HTMLInputElement;
+        if (input) {
+            input.focus();
+            input.select();
+        }
+
+        const cleanup = (val: string | null) => {
+            overlay!.style.display = 'none';
+            document.removeEventListener('keydown', keyHandler);
+            resolve(val);
+        };
+
+        const keyHandler = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') cleanup(null);
+            if (e.key === 'Enter') cleanup(input.value.trim());
+        };
+
+        document.addEventListener('keydown', keyHandler);
+        document.getElementById('input-cancel-btn')!.onclick = () => cleanup(null);
+        document.getElementById('input-ok-btn')!.onclick = () => cleanup(input.value.trim());
+    });
+}
+
+function escapeHtml(str: string): string {
+    const p = document.createElement('p');
+    p.textContent = str;
+    return p.innerHTML;
 }

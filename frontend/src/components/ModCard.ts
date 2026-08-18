@@ -4,6 +4,7 @@
 import { Mod } from '../types';
 import { tauriInvoke } from '../api/client';
 import { convertFileSrc } from '@tauri-apps/api/core';
+import { showInputDialog } from './Modal';
 
 export interface ModCardCallbacks {
     onMoveToPosition?: (mod: Mod, targetPos: number) => void;
@@ -186,9 +187,18 @@ export function createModCard(
         }
 
         if (injectBtn && callbacks?.onActivate) {
-            injectBtn.onclick = (e) => {
+            injectBtn.onclick = async (e) => {
                 e.stopPropagation();
-                const inputVal = prompt(`Inject "${mod.title || mod.name}" at position # (1 to ${totalActive + 1}):`, '1');
+                const inputVal = await showInputDialog({
+                    title: 'Inject Mod into Load Order',
+                    message: `Enter position # for "${mod.title || mod.name}" (1 to ${totalActive + 1}):`,
+                    defaultValue: 1,
+                    inputType: 'number',
+                    min: 1,
+                    max: totalActive + 1,
+                    confirmText: 'Inject at Position'
+                });
+
                 if (inputVal !== null) {
                     const pos = parseInt(inputVal.trim(), 10);
                     if (!isNaN(pos) && pos >= 1) {

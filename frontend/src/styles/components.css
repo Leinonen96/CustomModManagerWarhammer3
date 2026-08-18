@@ -164,24 +164,110 @@
     color: var(--color-text-dim);
 }
 
-/* Custom Styled Select with SVG Arrow */
-.select-input {
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    background-image: var(--select-chevron-svg);
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-    background-size: 10px 6px;
-    padding-right: 28px;
+/* --- CUSTOM STUDIO DROPDOWN (100% DOM-BASED, NO OS POPUP) --- */
+.custom-select-wrapper {
+    position: relative;
     min-width: 180px;
-    cursor: pointer;
+    height: var(--control-height-md);
+    user-select: none;
 }
 
-.select-input option {
-    background: var(--color-bg-surface);
+.custom-select-trigger {
+    width: 100%;
+    height: 100%;
+    background: var(--color-bg-app);
     color: var(--color-text-primary);
-    padding: 6px;
+    border: 1px solid var(--color-border-medium);
+    border-radius: var(--radius-sm);
+    padding: 0 10px;
+    font-family: inherit;
+    font-size: 0.84rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.08s ease;
+}
+
+.custom-select-trigger:focus,
+.custom-select-wrapper.open .custom-select-trigger {
+    border-color: var(--color-border-focus);
+    box-shadow: 0 0 0 1px var(--color-border-focus);
+}
+
+.custom-select-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-right: 8px;
+}
+
+.custom-select-arrow {
+    width: 10px;
+    height: 6px;
+    background-image: var(--select-chevron-svg);
+    background-repeat: no-repeat;
+    background-size: contain;
+    flex-shrink: 0;
+    transition: transform 0.12s ease;
+}
+
+.custom-select-wrapper.open .custom-select-arrow {
+    transform: rotate(180deg);
+}
+
+.custom-select-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    min-width: 100%;
+    max-height: 240px;
+    overflow-y: auto;
+    background: var(--color-bg-surface);
+    border: 1px solid var(--color-border-medium);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.75);
+    z-index: 10000;
+    padding: 3px;
+}
+
+/* Custom Select Menu Scrollbar */
+.custom-select-menu::-webkit-scrollbar {
+    width: 5px;
+}
+.custom-select-menu::-webkit-scrollbar-track {
+    background: transparent;
+}
+.custom-select-menu::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.14);
+    border-radius: var(--radius-sm);
+}
+
+.custom-select-item {
+    padding: 6px 10px;
+    font-size: 0.84rem;
+    color: var(--color-text-secondary);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: background-color 0.08s, color 0.08s;
+}
+
+.custom-select-item:hover,
+.custom-select-item.highlighted {
+    background: var(--color-bg-card-hover);
+    color: var(--color-text-primary);
+}
+
+.custom-select-item.selected {
+    background: var(--color-primary-subtle);
+    color: var(--color-primary);
+    font-weight: 700;
 }
 
 .text-input {
