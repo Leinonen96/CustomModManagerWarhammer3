@@ -4,6 +4,7 @@
 import { Modal } from './Modal';
 import { store } from '../state/store';
 import { fetchConfig, saveConfig, validateConfigPaths, autoDetectPaths, pickFolder } from '../api/configApi';
+import { fetchMods } from '../api/modApi';
 import { Toast } from './Toast';
 
 export class SettingsModal extends Modal {
@@ -141,12 +142,14 @@ export class SettingsModal extends Modal {
 
         this.saveBtn.onclick = async () => {
             const config = {
-                WORKSHOP_DIR: this.workshopInput.value.trim(),
-                GAME_DATA_DIR: this.dataInput.value.trim(),
-                SCRIPT_FILE: this.scriptInput.value.trim()
+                workshop_dir: this.workshopInput.value.trim(),
+                game_data_dir: this.dataInput.value.trim(),
+                script_file: this.scriptInput.value.trim(),
+                auto_backup: true,
+                theme: 'dark'
             };
 
-            if (!config.WORKSHOP_DIR || !config.GAME_DATA_DIR || !config.SCRIPT_FILE) {
+            if (!config.workshop_dir || !config.game_data_dir || !config.script_file) {
                 Toast.warning('Please fill in all three required path settings.');
                 return;
             }
@@ -155,6 +158,8 @@ export class SettingsModal extends Modal {
             try {
                 await saveConfig(config);
                 store.setConfig(config);
+                const mods = await fetchMods();
+                store.setAllMods(mods);
                 Toast.success('Settings saved successfully!');
                 this.close();
             } catch (err: any) {
@@ -173,9 +178,9 @@ export class SettingsModal extends Modal {
         try {
             const config = await fetchConfig();
             store.setConfig(config);
-            this.workshopInput.value = config.WORKSHOP_DIR || '';
-            this.dataInput.value = config.GAME_DATA_DIR || '';
-            this.scriptInput.value = config.SCRIPT_FILE || '';
+            this.workshopInput.value = config.workshop_dir || config.WORKSHOP_DIR || '';
+            this.dataInput.value = config.game_data_dir || config.GAME_DATA_DIR || '';
+            this.scriptInput.value = config.script_file || config.SCRIPT_FILE || '';
             this.updateValidationBadges();
         } catch (err) {
             console.error('Failed to load settings', err);

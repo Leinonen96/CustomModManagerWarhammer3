@@ -1,5 +1,5 @@
 /**
- * Shared Type Definitions for Warhammer 3 Mod Manager Frontend.
+ * Shared Type Definitions for Warhammer 3 Mod Manager Frontend (Tauri v2).
  */
 
 export interface Mod {
@@ -15,9 +15,12 @@ export interface Mod {
 }
 
 export interface AppConfig {
-    WORKSHOP_DIR: string;
-    GAME_DATA_DIR: string;
-    SCRIPT_FILE: string;
+    workshop_dir?: string;
+    game_data_dir?: string;
+    script_file?: string;
+    WORKSHOP_DIR?: string;
+    GAME_DATA_DIR?: string;
+    SCRIPT_FILE?: string;
     auto_backup?: boolean;
     theme?: string;
 }
@@ -38,9 +41,12 @@ export interface ConfigValidationResult {
 }
 
 export interface PathDetectionResult {
-    WORKSHOP_DIR: string;
-    GAME_DATA_DIR: string;
-    SCRIPT_FILE: string;
+    WORKSHOP_DIR?: string;
+    GAME_DATA_DIR?: string;
+    SCRIPT_FILE?: string;
+    workshop_dir?: string;
+    game_data_dir?: string;
+    script_file?: string;
     detected: boolean;
 }
 

@@ -26,7 +26,11 @@ class App {
             const config = await fetchConfig();
             store.setConfig(config);
 
-            const isConfigured = Boolean(config.WORKSHOP_DIR && config.GAME_DATA_DIR && config.SCRIPT_FILE);
+            const isConfigured = Boolean(
+                (config.workshop_dir || config.WORKSHOP_DIR) &&
+                (config.game_data_dir || config.GAME_DATA_DIR) &&
+                (config.script_file || config.SCRIPT_FILE)
+            );
 
             if (!isConfigured) {
                 Toast.info('Welcome! Please configure your Warhammer 3 installation paths.');
