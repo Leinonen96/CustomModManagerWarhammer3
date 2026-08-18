@@ -6,8 +6,8 @@
 .controls {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 10px 18px;
+    gap: 8px;
+    padding: 6px 10px;
     background: var(--bg-surface);
     border-bottom: 1px solid var(--border-subtle);
     flex-shrink: 0;
@@ -18,7 +18,7 @@
 .action-group {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
 }
 
 .spacer {
@@ -30,16 +30,17 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    padding: 7px 14px;
-    font-size: 0.88rem;
+    gap: 5px;
+    padding: 5px 11px;
+    font-size: 0.84rem;
     font-weight: 600;
     border-radius: var(--radius-sm);
     border: 1px solid transparent;
     cursor: pointer;
-    transition: background-color 0.12s, border-color 0.12s;
+    transition: background-color 0.08s, border-color 0.08s;
     outline: none;
     user-select: none;
+    height: 30px;
 }
 
 .btn:disabled {
@@ -95,11 +96,12 @@
     color: var(--text-primary);
     border: 1px solid var(--border-medium);
     border-radius: var(--radius-sm);
-    padding: 7px 12px;
-    font-size: 0.88rem;
+    padding: 5px 9px;
+    font-size: 0.84rem;
     font-family: inherit;
     outline: none;
-    transition: border-color 0.12s;
+    height: 30px;
+    transition: border-color 0.08s;
 }
 
 .select-input:focus,
@@ -109,19 +111,19 @@
 }
 
 .select-input {
-    min-width: 190px;
+    min-width: 180px;
     cursor: pointer;
 }
 
 .text-input {
-    width: 170px;
+    width: 150px;
 }
 
 /* --- MAIN WORKSPACE CONTAINER --- */
 .container {
     display: flex;
-    gap: 16px;
-    padding: 14px 18px;
+    gap: 8px;
+    padding: 6px 8px;
     flex-grow: 1;
     overflow: hidden;
     background: var(--bg-app);
@@ -133,8 +135,8 @@
     flex-direction: column;
     background: var(--bg-surface);
     border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-md);
-    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
     overflow: hidden;
 }
 
@@ -143,7 +145,7 @@
 }
 
 .panel-header {
-    margin-bottom: 12px;
+    margin-bottom: 6px;
     flex-shrink: 0;
 }
 
@@ -151,20 +153,25 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
+    margin-bottom: 5px;
+}
+
+.panel-title-row h3 {
+    font-size: 0.95rem;
+    font-weight: 700;
 }
 
 .sub-text {
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     font-weight: 500;
     color: var(--text-muted);
 }
 
 .count-badge {
-    font-size: 0.78rem;
+    font-size: 0.75rem;
     font-weight: 700;
-    padding: 3px 10px;
-    border-radius: var(--radius-pill);
+    padding: 2px 7px;
+    border-radius: var(--radius-sm);
     background: var(--bg-surface-elevated);
     color: var(--text-secondary);
     border: 1px solid var(--border-subtle);
@@ -186,7 +193,7 @@
     background: var(--bg-base);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-sm);
-    padding: 10px;
+    padding: 4px;
     overflow-y: auto;
     overflow-x: hidden;
     min-height: 0;
