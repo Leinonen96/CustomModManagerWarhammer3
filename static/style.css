@@ -242,6 +242,9 @@ input:focus, select:focus {
     padding: 10px; 
     overflow-y: auto; 
     min-height: 0;
+    will-change: scroll-position;
+    transform: translateZ(0);
+    contain: layout paint;
 }
 
 /* Custom Scrollbar */
@@ -271,13 +274,16 @@ input:focus, select:focus {
     cursor: grab; 
     border: 1px solid transparent; 
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-    transition: transform 0.1s, border-color 0.15s, background 0.15s;
+    contain: layout style paint;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 72px;
+    transform: translateZ(0);
+    transition: border-color 0.12s, background 0.12s;
 }
 
 .mod-item:hover { 
     border-color: var(--border-focus); 
     background: var(--bg-card-hover);
-    transform: translateY(-1px);
 }
 
 .mod-item:active {

@@ -2,6 +2,7 @@
  * Mod item card builder with interactive order badges and quick-action buttons.
  */
 import { Mod } from '../types';
+import { tauriInvoke } from '../api/client';
 
 export interface ModCardCallbacks {
     onMoveToPosition?: (mod: Mod, targetPos: number) => void;
@@ -25,6 +26,7 @@ export function createModCard(
     const steamUrl = mod.url || `https://steamcommunity.com/sharedfiles/filedetails/?id=${mod.id}`;
     const displayTitle = mod.title || mod.name.replace(/\.pack$/i, '').replace(/_/g, ' ');
     const displayOrder = orderNumber !== null ? orderNumber.toString() : '-';
+    const thumbSrc = mod.thumb && mod.thumb.length > 0 ? mod.thumb : '/static/gemini-svg.svg';
 
     // Format file size
     let sizeStr = '';
@@ -59,7 +61,7 @@ export function createModCard(
              ${displayOrder}
         </div>
         <div class="mod-thumb-container">
-            <img src="${mod.thumb}" alt="${escapeHtml(displayTitle)}" class="mod-thumb" loading="lazy">
+            <img src="${thumbSrc}" alt="${escapeHtml(displayTitle)}" class="mod-thumb" loading="lazy" decoding="async">
         </div>
         <div class="mod-info">
             <div class="mod-name-row">
@@ -70,11 +72,21 @@ export function createModCard(
             <div class="mod-meta">
                 <span>ID: ${escapeHtml(mod.id)}</span>
                 <span class="meta-dot">&bull;</span>
-                <a href="${steamUrl}" target="_blank" rel="noopener noreferrer" class="steam-link" onclick="event.stopPropagation()">View on Steam ↗</a>
+                <a href="${steamUrl}" class="steam-link" title="Open Steam Workshop page">View on Steam ↗</a>
             </div>
         </div>
         ${actionsHtml}
     `;
+
+    // Handle Steam link native browser open
+    const steamLink = div.querySelector('.steam-link') as HTMLAnchorElement;
+    if (steamLink) {
+        steamLink.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            tauriInvoke('open_url', { url: steamUrl });
+        };
+    }
 
     // Handle thumbnail fallback
     const img = div.querySelector('.mod-thumb') as HTMLImageElement;

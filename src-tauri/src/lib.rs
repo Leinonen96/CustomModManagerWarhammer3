@@ -20,7 +20,8 @@ pub fn run() {
             load_preset,
             save_preset,
             delete_preset,
-            apply_load_order
+            apply_load_order,
+            open_url
         ])
         .run(tauri::generate_context!())
         .expect("error while running Total War: WARHAMMER III Mod Manager");
