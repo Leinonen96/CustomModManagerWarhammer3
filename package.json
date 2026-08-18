@@ -9,7 +9,9 @@
     "typecheck": "tsc --noEmit",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "tauri:build": "tauri build",
+    "version:bump": "node scripts/bump_version.js",
+    "release": "./scripts/release.sh"
   },
   "devDependencies": {
     "@tauri-apps/api": "^2.2.0",
