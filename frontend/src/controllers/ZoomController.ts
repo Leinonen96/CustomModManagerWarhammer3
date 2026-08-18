@@ -1,5 +1,6 @@
 /**
- * UI Zoom Controller with Dynamic Scaling and Keyboard/Mousewheel Handlers.
+ * UI Zoom Controller with Dynamic Scaling.
+ * Zooms the workspace content while keeping the native Titlebar and OS controls strictly fixed.
  */
 import { store } from '../state/store';
 import { saveConfig } from '../api/configApi';
@@ -25,8 +26,11 @@ export class ZoomController {
         const clamped = Math.round(Math.min(Math.max(scale, 0.70), 1.60) * 100) / 100;
         this.currentScale = clamped;
 
-        // Apply zoom scale
-        document.documentElement.style.zoom = `${clamped}`;
+        // Apply zoom scale strictly to the application workspace (Titlebar remains 100% fixed)
+        const workspace = document.getElementById('app-workspace');
+        if (workspace) {
+            workspace.style.zoom = `${clamped}`;
+        }
         document.documentElement.style.setProperty('--ui-scale', `${clamped}`);
 
         this.showIndicator();

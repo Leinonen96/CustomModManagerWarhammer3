@@ -278,7 +278,16 @@
     width: 100%;
 }
 
-/* --- MAIN WORKSPACE LAYOUT --- */
+/* --- MAIN SCALABLE WORKSPACE LAYOUT (Titlebar remains fixed outside) --- */
+.app-workspace {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    overflow: hidden;
+    min-height: 0;
+    width: 100%;
+}
+
 .container {
     display: flex;
     gap: 8px;
