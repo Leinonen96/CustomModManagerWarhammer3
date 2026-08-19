@@ -1,110 +1,88 @@
-# Warhammer III Mod Manager - Pro Studio Design System
+# Frontend Design System & Architecture
 
-## 1. Overview & Aesthetic Philosophy
+## 1. Overview & Principles
 
-The WH3 Mod Manager design system is engineered for **desktop productivity, high information density, and instant 144 FPS visual responsiveness**. It follows a **Pro Studio Dark** visual hierarchy inspired by creative workstation software (DaVinci Resolve, JetBrains, Blender) and modern desktop gaming utilities.
+The user interface is built for high information density, low latency, and efficient interaction when managing large collections of mod files.
 
 ### Core Principles
-1. **Zero Bubbly Fluff**: Sharp, precision geometry (`2px–3px` corner radiuses).
-2. **Strict Design Token Hierarchy**: Single source of truth in `frontend/src/styles/tokens.css`.
-3. **Zero-Cost GPU Rendering**: Hardware-accelerated 1px borders instead of costly composited box shadows.
-4. **Instant Semantic Feedback**: Distinct semantic accents for states (Active, Missing, Modified, Danger).
-5. **Cross-Platform Uniformity**: Custom SVG chevron select dropdowns and frameless native titlebars.
+1. **Performance & Layout Containment**: Heavy use of CSS layout containment (`contain: layout style paint;`) and hardware-accelerated transforms to eliminate reflow bottlenecks during drag-and-drop operations.
+2. **Consistent Design Tokens**: All colors, borders, typography, and geometry are centralized in `frontend/src/styles/tokens.css`.
+3. **Deterministic UI State**: The view layer reacts directly to a centralized state store with atomic updates and automatic persistence.
+4. **Vector Asset Consistency**: Standardized vector SVG icons throughout the interface with zero platform-dependent emoji rendering.
 
 ---
 
 ## 2. Design Tokens (`tokens.css`)
 
 ### Surfaces & Layers
-| Token | Hex / Value | Purpose |
+| Token | Value | Application |
 | :--- | :--- | :--- |
-| `--color-bg-app` | `#07080B` | Deepest canvas layer |
+| `--color-bg-app` | `#07080B` | Root application background |
 | `--color-bg-base` | `#0B0D13` | List viewport and inactive panel container |
-| `--color-bg-surface` | `#10131D` | Modals, panels, header toolbar |
-| `--color-bg-surface-elevated`| `#151A27` | Secondary buttons, badge backings |
-| `--color-bg-surface-hover` | `#192030` | Hover states on controls |
+| `--color-bg-surface` | `#10131D` | Modals, inspector drawer, toolbar |
+| `--color-bg-surface-elevated`| `#151A27` | Secondary controls, badge backings |
+| `--color-bg-surface-hover` | `#192030` | Interactive hover states |
 | `--color-bg-card` | `#131723` | Individual mod cards |
-| `--color-bg-card-hover` | `#1A2031` | Mod card hover elevation |
-| `--color-bg-card-active` | `#222A40` | Dragging / active card selection |
+| `--color-bg-card-hover` | `#1A2031` | Card hover state |
+| `--color-bg-card-active` | `#222A40` | Active selection / drag state |
 
-### Accents & Semantic Colors
-| Token | Value | Meaning / Usage |
-| :--- | :--- | :--- |
-| `--color-primary` | `#10B981` | Studio Emerald (Apply, active count, active order, primary actions) |
-| `--color-primary-hover` | `#059669` | Primary button hover |
-| `--color-primary-subtle` | `rgba(16,185,129,0.12)` | Active pill badge and focus rings |
-| `--color-amber` | `#F59E0B` | Warning toasts, movie pack notice |
-| `--color-cyan` | `#38BDF8` | Steam Workshop links, insert action, info toasts |
-| `--color-danger` | `#EF4444` | Delete preset, deactivate mod, error toasts |
-| `--color-danger-subtle` | `rgba(239,68,68,0.14)` | Danger button background |
-
-### Typography Colors
+### Semantic Colors
 | Token | Value | Application |
 | :--- | :--- | :--- |
-| `--color-text-primary` | `#F3F4F6` | Card titles, modal headers, button text |
-| `--color-text-secondary` | `#9CA3AF` | Subtitles, descriptions, secondary buttons |
+| `--color-primary` | `#10B981` | Primary actions (Deploy to Game, active counters, selected states) |
+| `--color-primary-hover` | `#059669` | Primary action hover |
+| `--color-primary-subtle` | `rgba(16,185,129,0.12)` | Subtle highlight backgrounds and active focus rings |
+| `--color-amber` | `#F59E0B` | Pinned mod indicators, warnings, movie pack notices |
+| `--color-cyan` | `#38BDF8` | Links, informational notices, relative rule indicators |
+| `--color-danger` | `#EF4444` | Destructive actions, fatal collision indicators |
+| `--color-danger-subtle` | `rgba(239,68,68,0.14)` | Danger button backings |
+
+### Typography
+| Token | Value | Application |
+| :--- | :--- | :--- |
+| `--color-text-primary` | `#F3F4F6` | Primary headings, card titles, button labels |
+| `--color-text-secondary` | `#9CA3AF` | Subtitles, descriptions, secondary controls |
 | `--color-text-muted` | `#6B7280` | File names, timestamps, inactive numbers |
-| `--color-text-dim` | `#4B5563` | Placeholders, separators, metadata dots |
-
-### Borders & Outlines
-| Token | Value | Application |
-| :--- | :--- | :--- |
-| `--color-border-subtle` | `rgba(255, 255, 255, 0.07)` | Card outline, panel dividers, titlebar bottom |
-| `--color-border-medium` | `rgba(255, 255, 255, 0.13)` | Buttons, inputs, modals |
-| `--color-border-hover` | `rgba(255, 255, 255, 0.22)` | Button hover border |
-| `--color-border-focus` | `rgba(16, 185, 129, 0.55)` | Active focus rings |
-| `--color-border-accent` | `rgba(16, 185, 129, 0.35)` | Active load order panel border |
+| `--color-text-dim` | `#4B5563` | Separators, placeholders, metadata bullets |
+| `--font-mono` | `'JetBrains Mono', monospace` | Pack filenames, checksums, order indexes |
 
 ### Geometry & Sizing
-| Token | Value | Description |
+| Token | Value | Application |
 | :--- | :--- | :--- |
-| `--radius-sm` | `2px` | Buttons, inputs, mod cards, badges |
+| `--radius-sm` | `2px` | Buttons, inputs, badges, cards |
 | `--radius-md` | `3px` | Panels, toolbars |
-| `--radius-lg` | `4px` | Modals |
-| `--control-height-sm` | `24px` | Micro-buttons, browse buttons, card actions |
-| `--control-height-md` | `30px` | Standard buttons, selects, search inputs |
-| `--control-height-lg` | `36px` | Hero buttons |
+| `--radius-lg` | `4px` | Modal dialogs |
+| `--control-height-sm` | `24px` | Compact toolbar items, card action buttons |
+| `--control-height-md` | `30px` | Standard inputs, selects, buttons |
+| `--control-height-lg` | `36px` | Hero action buttons |
 
 ---
 
-## 3. Component System & Class Contracts
+## 3. Component Architecture & Class Contracts
 
 ### Buttons (`.btn`)
-Every button uses 1-line flex centering, sharp `2px` radius, and instant hover states:
+All buttons share uniform flex alignment, predictable padding, and subtle state transitions:
 
 ```html
-<!-- Primary Action -->
-<button class="btn btn-primary">⚡ APPLY TO GAME</button>
+<!-- Primary action -->
+<button class="btn btn-primary">Deploy to Game</button>
 
-<!-- Secondary Toolbar Button -->
-<button class="btn btn-secondary">📂 Load</button>
+<!-- Secondary action -->
+<button class="btn btn-secondary">Load Preset</button>
 
-<!-- Danger Action -->
-<button class="btn btn-danger">🗑️</button>
+<!-- Compact action -->
+<button class="btn btn-secondary btn-sm">Browse</button>
 
-<!-- Micro Compact Button -->
-<button class="btn btn-secondary btn-sm">📁 Browse</button>
+<!-- Destructive action -->
+<button class="btn btn-danger btn-sm">Delete</button>
 ```
 
-### Form Controls
-- **`<select class="select-input">`**: Custom SVG chevron via `--select-chevron-svg` eliminating OS-level rendering variations across Linux/Windows.
-- **`<input class="text-input">`** & **`<input class="search-bar">`**: Uniform 30px height, inset padding, focus border highlight.
-
-```html
-<select class="select-input">
-    <option value="campaign_mods">Campaign Preset</option>
-</select>
-
-<input type="text" class="text-input" placeholder="Preset name...">
-<input type="text" class="search-bar" placeholder="Search mods...">
-```
-
-### Mod Item Cards (`.mod-item`)
-Mod cards are designed for high throughput rendering (100–500 mods) with strict GPU layout boundaries:
-- **Thumbnail**: `72px × 72px` with `object-fit: cover` and `contain: strict;`.
-- **Order Number**: Interactive click-to-edit box with numeric validation.
-- **Metadata**: Title (`0.96rem` bold), `.mod-filename` (`0.76rem` JetBrains Mono), `.mod-size-badge` (MB size), `.steam-link` (direct browser launch).
-- **Micro Action Cluster**: Quick jump (`⤒`, `⤓`), insert (`# Insert`), remove (`✕`).
+### Mod Cards (`.mod-item`)
+Mod cards are designed for high-density rendering (100–500+ items):
+- **Thumbnail**: `72px × 72px` with `object-fit: cover` and asynchronous decoding.
+- **Order Number (`.order-num`)**: Displays current index; supports direct numeric entry on click.
+- **Metadata**: Title, packfile name (`font-mono`), size badge, Steam Workshop link.
+- **Action Cluster**: Direct pin toggle, jump to top/bottom, inspect, remove.
 
 ```html
 <div class="mod-item" data-id="2789858755" data-name="!scm_totn.pack">
@@ -118,36 +96,36 @@ Mod cards are designed for high throughput rendering (100–500 mods) with stric
             <span class="mod-size-badge">245.2 MB</span>
         </div>
         <span class="mod-filename">!scm_totn.pack</span>
-        <div class="mod-meta">
-            <span class="steam-link">View on Steam ↗</span>
-        </div>
     </div>
     <div class="mod-actions">
-        <button class="card-action-btn btn-action-top">⤒</button>
-        <button class="card-action-btn btn-action-remove">✕</button>
+        <button class="card-action-btn" data-action="toggle-pin" title="Pin position">
+            <svg class="action-icon" viewBox="0 0 24 24">...</svg>
+        </button>
+        <button class="card-action-btn" data-action="remove" title="Deactivate">
+            <svg class="action-icon" viewBox="0 0 24 24">...</svg>
+        </button>
     </div>
 </div>
 ```
 
 ---
 
-## 4. Performance & Layout Containment
+## 4. Performance & Rendering Strategy
 
-To ensure buttery smooth 144 FPS scrolling with hundreds of active mods:
-1. **`content-visibility: auto; contain-intrinsic-size: auto 82px;`**: Off-screen mod cards skip layout and paint stages completely until scrolled into view.
-2. **`contain: layout style paint;`**: Prevents DOM reflows inside cards from triggering parent recalculations.
-3. **`transform: translateZ(0);`**: Forces hardware compositing layer creation.
-4. **Native Asset Streaming**: Uses Tauri's `convertFileSrc` to load images asynchronously directly from disk without blocking the main JS thread.
+1. **DOM Reconciliation**: When the load order changes, the renderer updates order badges and indices on existing DOM nodes in-place rather than rebuilding the entire card list.
+2. **Layout Containment (`contain: layout paint;`)**: Restricts style calculations and repaints to the individual card boundary.
+3. **Hardware Acceleration**: Transitions use GPU-composited properties (`opacity`, `transform`) to avoid layout thrashing during drag operations.
+4. **Native Image Streaming**: Thumbnail paths are resolved through the native asset protocol, bypassing base64 serialization overhead.
 
 ---
 
-## 5. Keyboard & UX Shortcuts
+## 5. Global Keyboard Shortcuts
 
 | Shortcut | Action | Scope |
 | :--- | :--- | :--- |
-| <kbd>Ctrl</kbd> + <kbd>+</kbd> / <kbd>=</kbd> | Zoom in UI by +5% | Global |
-| <kbd>Ctrl</kbd> + <kbd>-</kbd> / <kbd>_</kbd> | Zoom out UI by -5% | Global |
-| <kbd>Ctrl</kbd> + <kbd>0</kbd> | Reset UI Zoom to 100% | Global |
-| <kbd>Ctrl</kbd> + Mouse Wheel | Smooth dynamic UI zoom | Global |
-| <kbd>Escape</kbd> | Dismiss open Modals / Dialogs | Global |
-| Click on Order Number | Edit mod position directly | Active Mod Cards |
+| <kbd>Ctrl</kbd> + <kbd>+</kbd> / <kbd>=</kbd> | Zoom UI in (+10%) | Global |
+| <kbd>Ctrl</kbd> + <kbd>-</kbd> | Zoom UI out (-10%) | Global |
+| <kbd>Ctrl</kbd> + <kbd>0</kbd> | Reset UI zoom to 100% | Global |
+| <kbd>Ctrl</kbd> + Mouse Wheel | Dynamic workspace zoom | Global |
+| <kbd>Esc</kbd> | Dismiss active modal or inspector drawer | Global |
+| Click on `#` badge | Direct numeric position input | Active Mod Cards |
