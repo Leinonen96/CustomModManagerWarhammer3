@@ -22,3 +22,7 @@ export async function applyLoadOrder(mods: Mod[]): Promise<ApiResponse<LoadOrder
         data
     };
 }
+
+export async function launchGame(): Promise<void> {
+    await tauriInvoke('launch_game');
+}

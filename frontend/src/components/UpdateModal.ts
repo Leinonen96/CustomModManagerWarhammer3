@@ -93,7 +93,9 @@ export class UpdateModal {
                     </svg>
                     <h2>New Version Available</h2>
                 </div>
-                <button class="btn-close" id="btn-update-close" title="Close">&times;</button>
+                <button class="btn-close" id="btn-update-close" title="Close">
+                    <svg class="close-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
             </div>
 
             <div class="update-version-banner">

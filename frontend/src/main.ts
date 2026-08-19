@@ -13,6 +13,8 @@ import { ModListManager } from './components/ModList';
 import { HeaderControls } from './components/HeaderControls';
 import { SearchController } from './components/SearchBar';
 import { InspectorDrawer } from './components/InspectorDrawer';
+import { PanelResizer } from './components/PanelResizer';
+import { StudioTooltip } from './components/StudioTooltip';
 import { updateController } from './controllers/UpdateController';
 import { Toast } from './components/Toast';
 
@@ -25,17 +27,20 @@ class App {
     private headerControls!: HeaderControls;
     private searchController!: SearchController;
     private inspectorDrawer!: InspectorDrawer;
+    private panelResizer!: PanelResizer;
 
     public async init(): Promise<void> {
-        // Initialize frameless window titlebar, resizer & zoom controller
+        // Initialize frameless window titlebar, resizer, studio tooltips & zoom controller
         this.titleBar = new TitleBar();
         this.windowResizer = new WindowResizer();
         this.zoomController = new ZoomController();
+        StudioTooltip.init();
 
         this.settingsModal = new SettingsModal();
         this.headerControls = new HeaderControls(this.settingsModal);
         this.modListManager = new ModListManager('inactive-mods', 'active-mods');
         this.searchController = new SearchController('search-inactive', 'search-active');
+        this.panelResizer = new PanelResizer();
         this.inspectorDrawer = new InspectorDrawer();
 
         // Initialize background update check

@@ -1,4 +1,19 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum RuleType {
+    Above,
+    Below,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UserOverrideRule {
+    pub source_mod: String,
+    pub target_mod: String,
+    pub rule_type: RuleType,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Mod {
@@ -42,6 +57,10 @@ pub struct AppConfig {
     pub last_preset: Option<String>,
     #[serde(default)]
     pub ui_scale: Option<f64>,
+    #[serde(default)]
+    pub pinned_mods: HashMap<String, usize>,
+    #[serde(default)]
+    pub user_rules: Vec<UserOverrideRule>,
 }
 
 fn default_auto_backup() -> bool {
@@ -67,6 +86,8 @@ impl Default for AppConfig {
             theme: "dark".to_string(),
             last_preset: None,
             ui_scale: Some(1.0),
+            pinned_mods: HashMap::new(),
+            user_rules: Vec::new(),
         }
     }
 }

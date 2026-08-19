@@ -1,5 +1,6 @@
-use crate::domain::{ConflictAnalysisResult, Mod, PackedFileManifest};
+use crate::domain::{ConflictAnalysisResult, Mod, PackedFileManifest, UserOverrideRule};
 use crate::services::{DependencyEngine, PackParser};
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 #[tauri::command]
@@ -23,9 +24,19 @@ pub async fn get_pack_file_tree(pack_path: String) -> Result<PackedFileManifest,
 }
 
 #[tauri::command]
-pub async fn auto_sort_dependencies(active_mods: Vec<Mod>) -> Result<Vec<Mod>, String> {
+pub async fn auto_sort_dependencies(
+    active_mods: Vec<Mod>,
+    pinned_mods: Option<HashMap<String, usize>>,
+    user_rules: Option<Vec<UserOverrideRule>>,
+) -> Result<Vec<Mod>, String> {
     tauri::async_runtime::spawn_blocking(move || {
-        Ok(DependencyEngine::auto_sort_dependencies(&active_mods))
+        let pinned = pinned_mods.unwrap_or_default();
+        let rules = user_rules.unwrap_or_default();
+        Ok(DependencyEngine::auto_sort_dependencies_with_rules(
+            &active_mods,
+            &pinned,
+            &rules,
+        ))
     })
     .await
     .map_err(|e| format!("Auto sort thread error: {}", e))?

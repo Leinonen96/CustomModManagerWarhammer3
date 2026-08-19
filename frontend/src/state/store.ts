@@ -1,7 +1,8 @@
 /**
  * Central Reactive Application State Store.
  */
-import { Mod, AppConfig, ConflictAnalysisResult } from '../types';
+import { Mod, AppConfig, ConflictAnalysisResult, UserOverrideRule, RuleType } from '../types';
+import { saveConfig } from '../api/configApi';
 
 export type StoreEvent = 
     | 'MODS_CHANGED'
@@ -13,7 +14,9 @@ export type StoreEvent =
     | 'STATUS_CHANGED'
     | 'CONFLICTS_CHANGED'
     | 'INSPECTOR_CHANGED'
-    | 'DRAWER_TOGGLED';
+    | 'DRAWER_TOGGLED'
+    | 'PINNED_MODS_CHANGED'
+    | 'USER_RULES_CHANGED';
 
 type Listener = () => void;
 
@@ -26,6 +29,10 @@ class AppStore {
     private searchInactive: string = '';
     private searchActive: string = '';
     private isApplying: boolean = false;
+
+    // Pinning and User Override Rules
+    private pinnedMods: Map<string, number> = new Map();
+    private userRules: UserOverrideRule[] = [];
 
     // Conflict & Inspector State
     private conflictAnalysis: ConflictAnalysisResult | null = null;
@@ -47,7 +54,9 @@ class AppStore {
             'STATUS_CHANGED',
             'CONFLICTS_CHANGED',
             'INSPECTOR_CHANGED',
-            'DRAWER_TOGGLED'
+            'DRAWER_TOGGLED',
+            'PINNED_MODS_CHANGED',
+            'USER_RULES_CHANGED'
         ];
         events.forEach(e => this.listeners.set(e, new Set()));
     }
@@ -94,8 +103,109 @@ class AppStore {
 
     public setConfig(config: AppConfig): void {
         this.config = config;
+        // Sync pinned mods and rules from config
+        if (config.pinned_mods) {
+            this.pinnedMods = new Map(Object.entries(config.pinned_mods));
+        }
+        if (config.user_rules) {
+            this.userRules = [...config.user_rules];
+        }
         this.emit('CONFIG_CHANGED');
+        this.emit('PINNED_MODS_CHANGED');
+        this.emit('USER_RULES_CHANGED');
     }
+
+    // --- Pinned Mods & Custom Rules Management ---
+
+    public getPinnedMods(): Map<string, number> {
+        return this.pinnedMods;
+    }
+
+    public getPinnedModsObject(): Record<string, number> {
+        const obj: Record<string, number> = {};
+        this.pinnedMods.forEach((pos, key) => {
+            obj[key] = pos;
+        });
+        return obj;
+    }
+
+    public isModPinned(identifier: string): boolean {
+        return this.pinnedMods.has(identifier);
+    }
+
+    public getModPinnedPosition(identifier: string): number | undefined {
+        return this.pinnedMods.get(identifier);
+    }
+
+    public setModPinned(identifier: string, position: number): void {
+        this.pinnedMods.set(identifier, position);
+        this.persistPinsAndRules();
+        this.emit('PINNED_MODS_CHANGED');
+    }
+
+    public unpinMod(identifier: string): void {
+        if (this.pinnedMods.has(identifier)) {
+            this.pinnedMods.delete(identifier);
+            this.persistPinsAndRules();
+            this.emit('PINNED_MODS_CHANGED');
+        }
+    }
+
+    public toggleModPin(identifier: string, currentPosition?: number): boolean {
+        if (this.pinnedMods.has(identifier)) {
+            this.pinnedMods.delete(identifier);
+            this.persistPinsAndRules();
+            this.emit('PINNED_MODS_CHANGED');
+            return false;
+        } else {
+            const pos = currentPosition || 1;
+            this.pinnedMods.set(identifier, pos);
+            this.persistPinsAndRules();
+            this.emit('PINNED_MODS_CHANGED');
+            return true;
+        }
+    }
+
+    public getUserRules(): UserOverrideRule[] {
+        return this.userRules;
+    }
+
+    public addUserRule(sourceMod: string, targetMod: string, ruleType: RuleType): void {
+        // Remove duplicate/inverse rule if exists
+        this.userRules = this.userRules.filter(r => 
+            !(r.source_mod === sourceMod && r.target_mod === targetMod) &&
+            !(r.source_mod === targetMod && r.target_mod === sourceMod)
+        );
+        this.userRules.push({ source_mod: sourceMod, target_mod: targetMod, rule_type: ruleType });
+        this.persistPinsAndRules();
+        this.emit('USER_RULES_CHANGED');
+    }
+
+    public removeUserRule(index: number): void {
+        if (index >= 0 && index < this.userRules.length) {
+            this.userRules.splice(index, 1);
+            this.persistPinsAndRules();
+            this.emit('USER_RULES_CHANGED');
+        }
+    }
+
+    public clearUserRules(): void {
+        this.userRules = [];
+        this.persistPinsAndRules();
+        this.emit('USER_RULES_CHANGED');
+    }
+
+    private persistPinsAndRules(): void {
+        if (this.config) {
+            this.config.pinned_mods = this.getPinnedModsObject();
+            this.config.user_rules = [...this.userRules];
+            saveConfig(this.config).catch(err => {
+                console.error('Failed to auto-save pins/rules to config:', err);
+            });
+        }
+    }
+
+    // --- Presets, Search, & Status ---
 
     public getPresets(): string[] {
         return this.presets;
@@ -160,9 +270,6 @@ class AppStore {
     public setInspectedMod(mod: Mod | null): void {
         this.inspectedMod = mod;
         this.emit('INSPECTOR_CHANGED');
-        if (mod && !this.isDrawerOpen) {
-            this.setDrawerOpen(true);
-        }
     }
 
     public getIsDrawerOpen(): boolean {

@@ -99,7 +99,8 @@ impl PackParser {
         }
 
         let pack_type_val = u32::from_le_bytes(header_buf[0..4].try_into().unwrap_or_default());
-        let _bitmask = u32::from_le_bytes(header_buf[4..8].try_into().unwrap_or_default());
+        let bitmask = u32::from_le_bytes(header_buf[4..8].try_into().unwrap_or_default());
+        let has_timestamps = (bitmask & 0x0004) != 0;
         let file_count =
             u32::from_le_bytes(header_buf[12..16].try_into().unwrap_or_default()) as usize;
         let index_size =
@@ -173,6 +174,10 @@ impl PackParser {
             if let Some(null_idx) = index_buf[cursor..].iter().position(|&b| b == 0) {
                 let path_bytes = &index_buf[cursor..cursor + null_idx];
                 cursor += null_idx + 1;
+
+                if has_timestamps && cursor + 4 <= index_buf.len() {
+                    cursor += 4; // Skip 4-byte Unix timestamp
+                }
 
                 let path_str = String::from_utf8_lossy(path_bytes);
                 let normalized = path_str.replace('\\', "/").trim().to_lowercase();
@@ -265,6 +270,16 @@ impl PackParser {
             );
 
             for file in &manifest.files {
+                let lower_file = file.to_lowercase();
+                // Exclude authoring tool metadata and notes that do not affect in-game execution
+                if lower_file.ends_with(".rpfm_reserved")
+                    || lower_file == "notes.txt"
+                    || lower_file == "readme.txt"
+                    || lower_file.ends_with(".rpfm_drop")
+                {
+                    continue;
+                }
+
                 file_map.entry(file.clone()).or_default().push((
                     load_order_index,
                     m.name.clone(),
@@ -284,10 +299,8 @@ impl PackParser {
             for dep in &manifest.dependencies {
                 let matched_name = if summaries.contains_key(dep) {
                     Some(dep.clone())
-                } else if let Some(n) = id_to_name.get(dep) {
-                    Some(n.clone())
                 } else {
-                    None
+                    id_to_name.get(dep).cloned()
                 };
 
                 if let Some(target_name) = matched_name {

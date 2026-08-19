@@ -6,10 +6,11 @@ import Sortable from 'sortablejs';
 import { store } from '../state/store';
 import { Mod } from '../types';
 import { createModCard, updateModCardState, updateModCardConflicts, getModIdentifier } from './ModCard';
-import { Toast } from './Toast';
 import { showInputDialog } from './Modal';
+import { Toast } from './Toast';
 import { tauriInvoke } from '../api/client';
 import { analyzeLoadOrderConflicts } from '../api/conflictApi';
+import { ContextMenu } from './ContextMenu';
 
 export class ModListManager {
     private inactiveContainer: HTMLElement;
@@ -70,11 +71,7 @@ export class ModListManager {
             const target = e.target as HTMLElement | null;
             if (!target) return;
 
-            // Find closest actionable element
-            const actionEl = target.closest('[data-action]') as HTMLElement | null;
-            if (!actionEl) return;
-
-            const cardEl = actionEl.closest('.mod-item') as HTMLElement | null;
+            const cardEl = target.closest('.mod-item') as HTMLElement | null;
             if (!cardEl) return;
 
             const modName = cardEl.dataset.name || '';
@@ -85,11 +82,19 @@ export class ModListManager {
                 id: modId,
                 title: cardEl.querySelector('.mod-title')?.textContent || modName || modId,
                 real_path: '',
-                thumb: '/static/gemini-svg.svg',
+                thumb: '/gemini-svg.svg',
                 url: cardEl.dataset.steamUrl || ''
             };
 
-            const action = actionEl.dataset.action;
+            // Check if a specific sub-action button or link was clicked
+            const actionEl = target.closest('[data-action]') as HTMLElement | null;
+            const action = actionEl ? actionEl.dataset.action : null;
+
+            if (!action) {
+                // Clicking anywhere on the card body highlights it and live updates the inspection view
+                store.setInspectedMod(mod);
+                return;
+            }
 
             if (action === 'steam') {
                 e.preventDefault();
@@ -99,6 +104,7 @@ export class ModListManager {
             } else if (action === 'inspect') {
                 e.stopPropagation();
                 store.setInspectedMod(mod);
+                store.setDrawerOpen(true);
             } else if (action === 'top') {
                 e.stopPropagation();
                 this.moveModToPosition(mod, 1);
@@ -111,6 +117,19 @@ export class ModListManager {
             } else if (action === 'add') {
                 e.stopPropagation();
                 this.activateMod(mod, 'bottom');
+            } else if (action === 'toggle-pin') {
+                e.stopPropagation();
+                if (isSourceActive) {
+                    const activeMods = store.getActiveMods();
+                    const currentIdx = activeMods.findIndex(m => (m.name || m.id) === (mod.name || mod.id)) + 1;
+                    const isNowPinned = store.toggleModPin(mod.name || mod.id, currentIdx > 0 ? currentIdx : 1);
+                    if (isNowPinned) {
+                        Toast.success(`Pinned "${mod.title || mod.name}" to position #${currentIdx}`);
+                    } else {
+                        Toast.info(`Unpinned "${mod.title || mod.name}"`);
+                    }
+                    this.render();
+                }
             } else if (action === 'add-top') {
                 e.stopPropagation();
                 this.activateMod(mod, 'top');
@@ -125,11 +144,46 @@ export class ModListManager {
             }
         };
 
+        const handleContextMenu = (e: MouseEvent, isSourceActive: boolean) => {
+            const target = e.target as HTMLElement;
+            const cardEl = target.closest('.mod-item') as HTMLElement | null;
+            if (!cardEl) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            const modName = cardEl.dataset.name || '';
+            const modId = cardEl.dataset.id || '';
+            const allMods = store.getAllMods();
+            const mod = allMods.find(m => (m.name && m.name === modName) || (m.id && m.id === modId)) || {
+                name: modName,
+                id: modId,
+                title: cardEl.querySelector('.mod-title')?.textContent || modName || modId,
+                real_path: '',
+                thumb: '/gemini-svg.svg',
+                url: cardEl.dataset.steamUrl || ''
+            };
+
+            // Right-click also selects and highlights the mod
+            store.setInspectedMod(mod);
+
+            let orderIndex: number | null = null;
+            if (isSourceActive) {
+                const activeMods = store.getActiveMods();
+                const idx = activeMods.findIndex(m => (m.name || m.id) === (mod.name || mod.id));
+                orderIndex = idx !== -1 ? idx + 1 : null;
+            }
+
+            ContextMenu.getInstance().show(e.clientX, e.clientY, mod, isSourceActive, orderIndex);
+        };
+
         if (this.inactiveContainer) {
             this.inactiveContainer.addEventListener('click', (e) => handleContainerClick(e, false));
+            this.inactiveContainer.addEventListener('contextmenu', (e) => handleContextMenu(e, false));
         }
         if (this.activeContainer) {
             this.activeContainer.addEventListener('click', (e) => handleContainerClick(e, true));
+            this.activeContainer.addEventListener('contextmenu', (e) => handleContextMenu(e, true));
         }
     }
 
@@ -140,6 +194,12 @@ export class ModListManager {
         store.subscribe('ACTIVE_MODS_CHANGED', () => {
             if (!this.isInternalDrag) this.render();
             this.triggerConflictAnalysis();
+        });
+        store.subscribe('PINNED_MODS_CHANGED', () => {
+            if (!this.isInternalDrag) this.render();
+        });
+        store.subscribe('USER_RULES_CHANGED', () => {
+            if (!this.isInternalDrag) this.render();
         });
         store.subscribe('SEARCH_CHANGED', () => this.applyFilters());
         store.subscribe('CONFLICTS_CHANGED', () => {
@@ -249,7 +309,11 @@ export class ModListManager {
 
     public moveModToPosition(mod: Mod, targetPos: number): void {
         const activeMods = [...store.getActiveMods()];
-        const currentIndex = activeMods.findIndex(m => (m.name || m.id) === (mod.name || mod.id));
+        const currentIndex = activeMods.findIndex(m => 
+            (m.name && mod.name && m.name === mod.name) || 
+            (m.id && mod.id && m.id === mod.id) ||
+            ((m.name || m.id) === (mod.name || mod.id))
+        );
         if (currentIndex === -1) return;
 
         const clampedPos = Math.max(1, Math.min(targetPos, activeMods.length));
@@ -323,9 +387,8 @@ export class ModListManager {
 
         const currentPosStr = orderNumEl.innerText.trim();
         const currentPos = parseInt(currentPosStr, 10) || 1;
-        const totalActive = store.getActiveMods().length;
 
-        orderNumEl.innerHTML = `<input type="number" class="order-input" min="1" max="${Math.max(1, totalActive)}" value="${currentPos}">`;
+        orderNumEl.innerHTML = `<input type="text" inputmode="numeric" pattern="[0-9]*" class="order-input-square" value="${currentPos}">`;
         const input = orderNumEl.querySelector('input') as HTMLInputElement;
         input.focus();
         input.select();
@@ -334,11 +397,12 @@ export class ModListManager {
         const applyPosition = () => {
             if (applied) return;
             applied = true;
-            const val = parseInt(input.value, 10);
+            const val = parseInt(input.value.trim(), 10);
+            // Clean up DOM text before triggering store update
+            orderNumEl.innerText = currentPos.toString();
+
             if (!isNaN(val) && val > 0 && val !== currentPos) {
                 this.moveModToPosition(mod, val);
-            } else {
-                orderNumEl.innerText = currentPos.toString();
             }
         };
 

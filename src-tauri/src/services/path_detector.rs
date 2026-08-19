@@ -23,6 +23,7 @@ pub fn find_steam_library_folders() -> Vec<PathBuf> {
     }
 
     let mut library_paths = Vec::new();
+    let re = Regex::new(r#""path"\s+"([^"]+)""#).unwrap();
 
     for root in potential_roots {
         if !root.exists() {
@@ -35,7 +36,6 @@ pub fn find_steam_library_folders() -> Vec<PathBuf> {
         let vdf_path = root.join("steamapps").join("libraryfolders.vdf");
         if vdf_path.exists() {
             if let Ok(content) = std::fs::read_to_string(&vdf_path) {
-                let re = Regex::new(r#""path"\s+"([^"]+)""#).unwrap();
                 for cap in re.captures_iter(&content) {
                     if let Some(matched) = cap.get(1) {
                         let clean_str = matched.as_str().replace(r"\\", r"\");
@@ -106,7 +106,7 @@ pub fn auto_detect_wh3_paths() -> PathDetectionResult {
                 .join("scripts")
                 .join("user.script.txt");
 
-            if script_path.parent().map_or(false, |p| p.exists()) {
+            if script_path.parent().is_some_and(|p| p.exists()) {
                 result.script_file = script_path.to_string_lossy().to_string();
                 break;
             }

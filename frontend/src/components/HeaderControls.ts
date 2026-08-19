@@ -4,7 +4,7 @@
  */
 import { store } from '../state/store';
 import { fetchPresetsList, fetchPresetDetails, savePreset, deletePreset } from '../api/presetApi';
-import { applyLoadOrder } from '../api/loadOrderApi';
+import { applyLoadOrder, launchGame } from '../api/loadOrderApi';
 import { saveConfig } from '../api/configApi';
 import { autoSortDependencies } from '../api/conflictApi';
 import { CustomSelect } from './CustomSelect';
@@ -22,6 +22,7 @@ export class HeaderControls {
     private toggleInspectorBtn!: HTMLButtonElement;
     private settingsBtn!: HTMLButtonElement;
     private applyBtn!: HTMLButtonElement;
+    private launchGameBtn!: HTMLButtonElement;
     private settingsModal: SettingsModal;
 
     constructor(settingsModal: SettingsModal) {
@@ -41,6 +42,7 @@ export class HeaderControls {
         this.toggleInspectorBtn = document.getElementById('btn-toggle-inspector') as HTMLButtonElement;
         this.settingsBtn = document.getElementById('btn-open-settings') as HTMLButtonElement;
         this.applyBtn = document.getElementById('btn-apply-order') as HTMLButtonElement;
+        this.launchGameBtn = document.getElementById('btn-launch-game') as HTMLButtonElement;
     }
 
     private bindEvents(): void {
@@ -64,15 +66,27 @@ export class HeaderControls {
                 }
                 try {
                     this.autoSortBtn.disabled = true;
-                    this.autoSortBtn.innerText = '⚡ Sorting...';
-                    const sorted = await autoSortDependencies(active);
+                    this.autoSortBtn.innerHTML = `
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Sorting...
+                    `;
+                    const pinned = store.getPinnedModsObject();
+                    const rules = store.getUserRules();
+                    const sorted = await autoSortDependencies(active, pinned, rules);
                     store.setActiveMods(sorted);
-                    Toast.success(`Auto-sorted ${sorted.length} active mods by dependency DAG!`);
+                    const pinCount = Object.keys(pinned).length;
+                    const ruleCount = rules.length;
+                    let extraMsg = '';
+                    if (pinCount > 0 && ruleCount > 0) extraMsg = ` (${pinCount} pinned, ${ruleCount} custom rules)`;
+                    else if (pinCount > 0) extraMsg = ` (${pinCount} pinned)`;
+                    else if (ruleCount > 0) extraMsg = ` (${ruleCount} custom rules)`;
+                    Toast.success(`Auto-sorted ${sorted.length} active mods by dependency DAG${extraMsg}!`);
                 } catch (err: any) {
                     Toast.error(`Auto-sort failed: ${err.message || err}`);
                 } finally {
                     this.autoSortBtn.disabled = false;
-                    this.autoSortBtn.innerText = '⚡ Auto-Sort';
+                    this.autoSortBtn.innerHTML = `
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> Auto-Sort
+                    `;
                 }
             };
         }
@@ -85,6 +99,9 @@ export class HeaderControls {
 
         this.settingsBtn.onclick = () => this.settingsModal.openAndLoad();
         this.applyBtn.onclick = () => this.handleApplyLoadOrder();
+        if (this.launchGameBtn) {
+            this.launchGameBtn.onclick = () => this.handleLaunchGame();
+        }
     }
 
     private bindStore(): void {
@@ -223,26 +240,58 @@ export class HeaderControls {
         const activeMods = store.getActiveMods();
         
         this.applyBtn.disabled = true;
-        const originalText = '⚡ APPLY TO GAME';
-        this.applyBtn.innerHTML = '⚡ Applying...';
+        this.applyBtn.innerHTML = `
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Deploying...
+        `;
 
         try {
             const res = await applyLoadOrder(activeMods);
-            Toast.success(res.message || `✓ Applied ${activeMods.length} mods to Total War: WARHAMMER III!`, 5000);
+            Toast.success(res.message || `✓ Deployed ${activeMods.length} mods to Total War: WARHAMMER III!`, 5000);
             
             // Visual green button success confirmation
             this.applyBtn.classList.add('btn-apply-success');
-            this.applyBtn.innerHTML = `✓ APPLIED (${activeMods.length} MODS)!`;
+            this.applyBtn.innerHTML = `✓ DEPLOYED (${activeMods.length} MODS)!`;
 
             setTimeout(() => {
                 this.applyBtn.classList.remove('btn-apply-success');
-                this.applyBtn.innerText = originalText;
+                this.applyBtn.innerHTML = `
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Deploy to Game
+                `;
                 this.applyBtn.disabled = false;
             }, 2400);
         } catch (err: any) {
-            Toast.error(`Failed to apply load order: ${err.message}`);
+            Toast.error(`Failed to deploy load order: ${err.message}`);
             this.applyBtn.disabled = false;
-            this.applyBtn.innerText = originalText;
+            this.applyBtn.innerHTML = `
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Deploy to Game
+            `;
+        }
+    }
+
+    private async handleLaunchGame(): Promise<void> {
+        if (!this.launchGameBtn) return;
+        this.launchGameBtn.disabled = true;
+        this.launchGameBtn.innerHTML = `
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Launching...
+        `;
+
+        try {
+            // Launches whatever was previously deployed to the game
+            await launchGame();
+            Toast.success('Launching Total War: WARHAMMER III via Steam...', 5000);
+
+            setTimeout(() => {
+                this.launchGameBtn.disabled = false;
+                this.launchGameBtn.innerHTML = `
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> PLAY GAME
+                `;
+            }, 3000);
+        } catch (err: any) {
+            Toast.error(`Launch failed: ${err.message || err}`);
+            this.launchGameBtn.disabled = false;
+            this.launchGameBtn.innerHTML = `
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> PLAY GAME
+            `;
         }
     }
 }

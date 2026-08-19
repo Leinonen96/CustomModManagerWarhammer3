@@ -7,6 +7,12 @@ pub struct ConfigStore {
     config_path: PathBuf,
 }
 
+impl Default for ConfigStore {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ConfigStore {
     pub fn new() -> Self {
         let app_dir = dirs::config_dir()
@@ -31,11 +37,7 @@ impl ConfigStore {
                 workshop_dir: detected.workshop_dir,
                 game_data_dir: detected.game_data_dir,
                 script_file: detected.script_file,
-                auto_backup: true,
-                auto_check_updates: true,
-                theme: "dark".to_string(),
-                last_preset: None,
-                ui_scale: Some(1.0),
+                ..AppConfig::default()
             };
             let _ = self.save(&config);
             return config;
@@ -69,7 +71,7 @@ impl ConfigStore {
             path: path_str.to_string(),
             exists,
             is_dir,
-            parent_exists: path.parent().map_or(false, |p| p.exists()),
+            parent_exists: path.parent().is_some_and(|p| p.exists()),
             readable: exists,
             writable: exists,
         }
@@ -78,7 +80,7 @@ impl ConfigStore {
     fn validate_file(&self, path_str: &str) -> PathValidationStatus {
         let path = Path::new(path_str);
         let exists = path.exists();
-        let parent_exists = path.parent().map_or(false, |p| p.exists());
+        let parent_exists = path.parent().is_some_and(|p| p.exists());
         PathValidationStatus {
             path: path_str.to_string(),
             exists,

@@ -57,7 +57,7 @@ impl GameIntegrator {
         if auto_backup && script_path.exists() {
             let mut bak_path = script_path.to_path_buf();
             bak_path.set_extension("txt.bak");
-            if let Ok(_) = fs::copy(script_path, &bak_path) {
+            if fs::copy(script_path, &bak_path).is_ok() {
                 backup_path_str = Some(bak_path.to_string_lossy().to_string());
             }
         }
@@ -95,10 +95,10 @@ impl GameIntegrator {
                 let path = entry.path();
                 if path.is_symlink() {
                     if let Some(ext) = path.extension() {
-                        if ext.to_string_lossy().eq_ignore_ascii_case("pack") {
-                            if fs::remove_file(&path).is_ok() {
-                                cleaned += 1;
-                            }
+                        if ext.to_string_lossy().eq_ignore_ascii_case("pack")
+                            && fs::remove_file(&path).is_ok()
+                        {
+                            cleaned += 1;
                         }
                     }
                 }

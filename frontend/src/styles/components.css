@@ -102,6 +102,28 @@
     background: var(--color-primary-active);
 }
 
+.btn-play {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #ffffff;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 14px rgba(16, 185, 129, 0.35);
+    padding: 0 12px;
+    transition: all 0.12s ease;
+}
+
+.btn-play:hover:not(:disabled) {
+    background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.6);
+    transform: translateY(-1px);
+}
+
+.btn-play:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
 .btn-secondary {
     background: var(--color-bg-surface-elevated);
     color: var(--color-text-primary);
@@ -293,19 +315,69 @@
     overflow: hidden;
     min-height: 0;
     width: 100%;
+    transition: margin-right 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.app-workspace.inspector-open {
+    margin-right: 390px;
 }
 
 .container {
     display: flex;
-    gap: 8px;
+    align-items: stretch;
+    gap: 0;
     padding: 6px 8px;
     flex-grow: 1;
     overflow: hidden;
     background: var(--color-bg-app);
 }
 
+/* Draggable Panel Splitter Resizer */
+.panel-resizer {
+    width: 12px;
+    margin: 0 -3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: col-resize;
+    user-select: none;
+    z-index: 100;
+    flex-shrink: 0;
+    transition: background 0.15s ease;
+}
+
+.panel-resizer .resizer-handle {
+    width: 3px;
+    height: 36px;
+    border-radius: 4px;
+    background: var(--color-border-medium);
+    transition: all 0.12s ease;
+}
+
+.panel-resizer:hover .resizer-handle,
+.panel-resizer.active .resizer-handle {
+    background: var(--color-primary);
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+    height: 52px;
+    width: 4px;
+}
+
+body.resizing-panels {
+    cursor: col-resize !important;
+    user-select: none !important;
+}
+
+body.resizing-panels * {
+    user-select: none !important;
+}
+
+body.resizing-panels #panel-resizer {
+    pointer-events: auto !important;
+}
+
 .panel {
     flex: 1;
+    min-width: 240px;
     display: flex;
     flex-direction: column;
     background: var(--color-bg-surface);
@@ -479,19 +551,162 @@
     background: transparent;
     border: none;
     color: var(--color-text-muted);
-    font-size: 1.3rem;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    padding: 0 4px;
-    line-height: 1;
-    transition: color 0.08s;
+    padding: 0;
+    transition: all 0.12s ease;
+}
+
+.btn-close .close-icon {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
 }
 
 .btn-close:hover {
-    color: var(--color-text-primary);
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.14);
+}
+
+.toast-close {
+    background: transparent;
+    border: none;
+    color: var(--color-text-muted);
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    margin-left: auto;
+    flex-shrink: 0;
+    transition: all 0.12s ease;
+}
+
+.toast-close .close-icon {
+    width: 12px;
+    height: 12px;
+    stroke: currentColor;
+}
+
+.toast-close:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.16);
 }
 
 .form-group {
     margin-bottom: 14px;
+}
+
+/* --- Settings Rules & Pins Manager --- */
+.settings-rules-panel {
+    background: var(--color-bg-base);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 8px;
+    max-height: 140px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.rules-category-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 2px;
+}
+
+.rule-item-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--color-bg-surface-elevated);
+    border: 1px solid var(--color-border-subtle);
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+}
+
+.rule-pinned-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #fbbf24;
+    background: rgba(245, 158, 11, 0.16);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    padding: 1px 6px;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+}
+
+.rule-rel-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #38bdf8;
+    background: rgba(14, 165, 233, 0.14);
+    border: 1px solid rgba(14, 165, 233, 0.35);
+    padding: 1px 5px;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+}
+
+.rule-mod-title {
+    font-size: 0.78rem;
+    color: var(--color-text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 180px;
+}
+
+.btn-rule-delete {
+    background: transparent;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    width: 20px;
+    height: 20px;
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+    transition: all 0.1s ease;
+}
+
+.btn-rule-delete .close-icon {
+    width: 12px;
+    height: 12px;
+    stroke: currentColor;
+}
+
+.btn-rule-delete:hover {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.15);
+}
+
+.rules-empty-state {
+    font-size: 0.78rem;
+    color: var(--color-text-dim);
+    padding: 10px;
+    text-align: center;
+    font-style: italic;
 }
 
 .form-label-row {
@@ -595,4 +810,43 @@
     border-color: #34d399 !important;
     color: #ffffff !important;
     transition: all 0.15s ease;
+}
+
+/* --- CUSTOM STUDIO TOOLTIPS --- */
+.studio-tooltip {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 999999;
+    pointer-events: none;
+    max-width: 320px;
+    padding: 6px 10px;
+    background: rgba(12, 16, 26, 0.94);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), 0 0 12px rgba(16, 185, 129, 0.15);
+    color: #f1f5f9;
+    font-size: 0.79rem;
+    font-weight: 500;
+    line-height: 1.35;
+    word-wrap: break-word;
+    white-space: normal;
+    opacity: 0;
+    transform: translateY(4px) scale(0.97);
+    transition: opacity 0.12s cubic-bezier(0.16, 1, 0.3, 1), transform 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.studio-tooltip-visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+.studio-tooltip.studio-tooltip-below {
+    transform: translateY(-4px) scale(0.97);
+}
+
+.studio-tooltip.studio-tooltip-below.studio-tooltip-visible {
+    transform: translateY(0) scale(1);
 }

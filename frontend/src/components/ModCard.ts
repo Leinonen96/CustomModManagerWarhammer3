@@ -22,6 +22,8 @@ const ICONS = {
     bottom: `<svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline><line x1="6" y1="19" x2="18" y2="19"></line></svg>`,
     plus: `<svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`,
     remove: `<svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`,
+    pin: `<svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.89A2 2 0 0 1 15 10.77V5a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v5.77a2 2 0 0 1-1.11 1.79l-1.78.89A2 2 0 0 0 5 15.24Z"></path></svg>`,
+    pinFilled: `<svg class="action-icon action-icon-pinned" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22" stroke-width="2.5"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.89A2 2 0 0 1 15 10.77V5a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v5.77a2 2 0 0 1-1.11 1.79l-1.78.89A2 2 0 0 0 5 15.24Z"></path></svg>`,
     external: `<svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>`,
     core: `<svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>`,
     fatal: `<svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`,
@@ -31,10 +33,13 @@ const ICONS = {
     dep: `<svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`
 };
 
-function buildConflictBadgesHtml(summary: ModConflictSummary | null | undefined, isMoviePackMod: boolean = false): string {
-    if (!summary && !isMoviePackMod) return '';
-
+function buildConflictBadgesHtml(summary: ModConflictSummary | null | undefined, isMoviePackMod: boolean = false, isPinned: boolean = false, pinnedPos?: number): string {
     let badgesHtml = '';
+    if (isPinned) {
+        badgesHtml += `<span class="conflict-badge badge-pinned" title="Pinned: Locked at position #${pinnedPos || 1} during Auto-Sort.">${ICONS.pinFilled} PIN #${pinnedPos || 1}</span>`;
+    }
+    if (!summary && !isMoviePackMod) return badgesHtml;
+
     if (summary?.is_framework) {
         badgesHtml += `<span class="conflict-badge badge-core" title="Core Framework: Foundational parent framework (e.g. Mixer, CBfM, MCT) loaded first.">${ICONS.core} CORE</span>`;
     }
@@ -61,9 +66,9 @@ function buildConflictBadgesHtml(summary: ModConflictSummary | null | undefined,
     return badgesHtml;
 }
 
-export function buildConflictSignature(summary: ModConflictSummary | null | undefined, isMovie: boolean): string {
-    if (!summary && !isMovie) return 'none';
+export function buildConflictSignature(summary: ModConflictSummary | null | undefined, isMovie: boolean, isPinned: boolean = false): string {
     return [
+        isPinned ? 1 : 0,
         summary?.is_framework ? 1 : 0,
         summary?.fatal_startpos_count || 0,
         (summary?.script_overrides_won || 0) + (summary?.ui_overrides_won || 0),
@@ -73,20 +78,23 @@ export function buildConflictSignature(summary: ModConflictSummary | null | unde
     ].join(':');
 }
 
-export function buildActionsHtml(isOrderActive: boolean, totalActive: number = 0): string {
+export function buildActionsHtml(isOrderActive: boolean, totalActive: number = 0, isPinned: boolean = false, orderNumber: number | null = null): string {
     if (isOrderActive) {
+        const pinTitle = isPinned 
+            ? `Unpin from position #${orderNumber || 1}` 
+            : `Pin to fixed position #${orderNumber || 1} (locks during Auto-Sort)`;
         return `
             <div class="mod-actions">
-                <button type="button" class="card-action-btn btn-action-inspect" data-action="inspect" title="Inspect Pack Manifest & Conflicts">
-                    ${ICONS.search}<span>Inspect</span>
+                <button type="button" class="card-action-btn ${isPinned ? 'card-action-btn-pinned' : ''}" data-action="toggle-pin" title="${pinTitle}">
+                    ${isPinned ? ICONS.pinFilled : ICONS.pin}<span>${isPinned ? 'Pinned' : 'Pin'}</span>
                 </button>
-                <button type="button" class="card-action-btn btn-action-top" data-action="top" title="Move to Top (Priority #1)">
+                <button type="button" class="card-action-btn" data-action="top" title="Move to Top (Priority #1)">
                     ${ICONS.top}<span>Top</span>
                 </button>
-                <button type="button" class="card-action-btn btn-action-bottom" data-action="bottom" title="Move to Bottom (Priority #${totalActive})">
+                <button type="button" class="card-action-btn" data-action="bottom" title="Move to Bottom (Priority #${totalActive})">
                     ${ICONS.bottom}<span>Bottom</span>
                 </button>
-                <button type="button" class="card-action-btn btn-action-remove" data-action="deactivate" title="Deactivate Mod">
+                <button type="button" class="card-action-btn card-action-btn-remove" data-action="deactivate" title="Remove from active load order">
                     ${ICONS.remove}<span>Remove</span>
                 </button>
             </div>
@@ -94,17 +102,14 @@ export function buildActionsHtml(isOrderActive: boolean, totalActive: number = 0
     }
     return `
         <div class="mod-actions">
-            <button type="button" class="card-action-btn btn-action-inspect" data-action="inspect" title="Inspect Pack Manifest & Contents">
-                ${ICONS.search}<span>Inspect</span>
-            </button>
-            <button type="button" class="card-action-btn btn-action-add" data-action="add" title="Add to bottom of Load Order">
-                ${ICONS.bottom}<span>Bottom</span>
-            </button>
-            <button type="button" class="card-action-btn btn-action-add-top" data-action="add-top" title="Add to top of Load Order">
+            <button type="button" class="card-action-btn" data-action="add-top" title="Add to top of active load order">
                 ${ICONS.top}<span>Top</span>
             </button>
-            <button type="button" class="card-action-btn btn-action-inject" data-action="inject" title="Insert at specific position">
+            <button type="button" class="card-action-btn" data-action="inject" title="Insert at specific position">
                 ${ICONS.plus}<span>Insert</span>
+            </button>
+            <button type="button" class="card-action-btn" data-action="add" title="Add to bottom of active load order">
+                ${ICONS.bottom}<span>Bottom</span>
             </button>
         </div>
     `;
@@ -135,9 +140,6 @@ export function createModCard(
         : '';
 
     const isWorkshop = (mod.source_type || 'Workshop').toLowerCase() === 'workshop' || Boolean(mod.id && mod.id.length > 5);
-    const sourceBadge = isWorkshop
-        ? `<span class="source-badge badge-ws" title="Steam Workshop Subscribed Mod">WS</span>`
-        : `<span class="source-badge badge-local" title="Local Game /data Mod">LOCAL</span>`;
 
     // Fast image conversion via Tauri protocol
     let finalThumbSrc = '/gemini-svg.svg';
@@ -154,22 +156,28 @@ export function createModCard(
     }
 
     const isOrderActive = orderNumber !== null;
-    const orderClass = isOrderActive ? 'order-num order-active order-editable' : 'order-num';
+    const isPinned = isOrderActive && (store.isModPinned(mod.name) || Boolean(mod.id && store.isModPinned(mod.id)));
+    const pinnedPos = isPinned ? (store.getModPinnedPosition(mod.name) || (mod.id ? store.getModPinnedPosition(mod.id) : undefined)) : undefined;
+
+    let orderClass = 'order-num';
+    if (isOrderActive) {
+        orderClass = isPinned ? 'order-num order-active order-editable order-pinned' : 'order-num order-active order-editable';
+    }
     const orderText = isOrderActive ? orderNumber.toString() : '-';
 
     // Conflict badges
     const conflictData = store.getConflictAnalysis();
     const summary = conflictData?.summaries ? (conflictData.summaries[mod.name] || (mod.id ? conflictData.summaries[mod.id] : null)) : null;
-    const conflictSig = buildConflictSignature(summary, Boolean(mod.is_movie_pack));
+    const conflictSig = buildConflictSignature(summary, Boolean(mod.is_movie_pack), isPinned);
     div.dataset.conflictSig = conflictSig;
-    const conflictBadgesHtml = buildConflictBadgesHtml(summary, Boolean(mod.is_movie_pack));
+    const conflictBadgesHtml = buildConflictBadgesHtml(summary, Boolean(mod.is_movie_pack), isPinned, pinnedPos);
 
-    const actionsHtml = buildActionsHtml(isOrderActive, totalActive);
+    const actionsHtml = buildActionsHtml(isOrderActive, totalActive, isPinned, orderNumber);
     const steamUrl = mod.url || `https://steamcommunity.com/sharedfiles/filedetails/?id=${mod.id}`;
     div.dataset.steamUrl = steamUrl;
 
     div.innerHTML = `
-        <div class="${orderClass}" data-action="edit-order" title="${isOrderActive ? 'Click to change order position' : ''}">${orderText}</div>
+        <div class="${orderClass}" data-action="edit-order" title="${isOrderActive ? (isPinned ? `Pinned at #${pinnedPos || orderNumber} (Click to change)` : 'Click to change order position') : ''}">${orderText}</div>
         <div class="mod-thumb-container">
             <img class="mod-thumb" width="72" height="72" loading="lazy" decoding="async" fetchpriority="low" src="${finalThumbSrc}" alt="${escapeHtml(mod.title || mod.name)}" onerror="this.src='/gemini-svg.svg';this.classList.add('fallback-thumb');">
         </div>
@@ -180,15 +188,14 @@ export function createModCard(
                 <span class="mod-id">ID: ${escapeHtml(mod.id || 'Local')}</span>
                 <span class="meta-dot">&bull;</span>
                 <a href="${steamUrl}" class="steam-link" data-action="steam" title="Open Steam Workshop page">View on Steam ${ICONS.external}</a>
+                <span class="meta-dot">&bull;</span>
+                <span class="mod-meta-subtle">${isWorkshop ? 'WS' : 'LOCAL'}</span>
+                ${sizeMb ? `<span class="meta-dot">&bull;</span><span class="mod-meta-subtle">${sizeMb}</span>` : ''}
                 ${conflictBadgesHtml ? `<div class="conflict-badge-group">${conflictBadgesHtml}</div>` : ''}
             </div>
         </div>
         <div class="mod-right-section">
             ${actionsHtml}
-            <div class="mod-badge-cluster">
-                ${sourceBadge}
-                ${sizeMb ? `<span class="mod-size-badge">${sizeMb}</span>` : ''}
-            </div>
         </div>
     `;
 
@@ -206,27 +213,30 @@ export function updateModCardState(
 ): void {
     const isOrderActive = orderNumber !== null;
     const currentOrderText = isOrderActive ? orderNumber.toString() : '-';
+    const modName = cardEl.dataset.name || '';
+    const modId = cardEl.dataset.id || '';
+    const isPinned = isOrderActive && (store.isModPinned(modName) || Boolean(modId && store.isModPinned(modId)));
+    const pinnedPos = isPinned ? (store.getModPinnedPosition(modName) || (modId ? store.getModPinnedPosition(modId) : undefined)) : undefined;
 
     const orderNumEl = cardEl.querySelector('.order-num') as HTMLElement | null;
-    if (orderNumEl && !orderNumEl.querySelector('input')) {
-        if (orderNumEl.innerText !== currentOrderText) {
-            orderNumEl.innerText = currentOrderText;
-        }
+    if (orderNumEl) {
+        orderNumEl.innerText = currentOrderText;
         if (isOrderActive) {
-            orderNumEl.className = 'order-num order-active order-editable';
-            orderNumEl.title = 'Click to change order position';
+            orderNumEl.className = isPinned ? 'order-num order-active order-editable order-pinned' : 'order-num order-active order-editable';
+            orderNumEl.title = isPinned ? `Pinned at #${pinnedPos || orderNumber} (Click to change position)` : 'Click to change order position';
         } else {
             orderNumEl.className = 'order-num';
             orderNumEl.title = '';
         }
     }
 
-    // Update Action Buttons if mode switched or total changed
+    // Update Action Buttons
     const actionsContainer = cardEl.querySelector('.mod-actions') as HTMLElement | null;
-    const isCurrentlyActiveCard = Boolean(cardEl.querySelector('.btn-action-top'));
+    const isCurrentlyActiveCard = Boolean(cardEl.querySelector('[data-action="deactivate"]'));
+    const isCurrentlyPinned = Boolean(cardEl.querySelector('.card-action-btn-pinned'));
 
-    if (isOrderActive !== isCurrentlyActiveCard || !actionsContainer) {
-        const newActionsHtml = buildActionsHtml(isOrderActive, totalActive);
+    if (isOrderActive !== isCurrentlyActiveCard || isPinned !== isCurrentlyPinned || !actionsContainer) {
+        const newActionsHtml = buildActionsHtml(isOrderActive, totalActive, isPinned, orderNumber);
         if (actionsContainer) {
             actionsContainer.outerHTML = newActionsHtml;
         } else {
@@ -237,7 +247,7 @@ export function updateModCardState(
         }
     } else if (isOrderActive && actionsContainer) {
         // Update bottom button title if total active count shifted
-        const bottomBtn = actionsContainer.querySelector('.btn-action-bottom') as HTMLElement | null;
+        const bottomBtn = actionsContainer.querySelector('[data-action="bottom"]') as HTMLElement | null;
         if (bottomBtn) {
             bottomBtn.title = `Move to Bottom (Priority #${totalActive})`;
         }

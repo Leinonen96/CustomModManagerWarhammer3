@@ -25,3 +25,27 @@ pub fn open_url(url: String) -> AppResult<()> {
     }
     Ok(())
 }
+
+#[command]
+pub fn open_path(path: String) -> AppResult<()> {
+    let p = std::path::Path::new(&path);
+    let target_dir = if p.is_file() {
+        p.parent().unwrap_or(p)
+    } else {
+        p
+    };
+
+    #[cfg(unix)]
+    {
+        let _ = std::process::Command::new("xdg-open")
+            .arg(target_dir)
+            .spawn();
+    }
+    #[cfg(windows)]
+    {
+        let _ = std::process::Command::new("explorer")
+            .arg(target_dir)
+            .spawn();
+    }
+    Ok(())
+}

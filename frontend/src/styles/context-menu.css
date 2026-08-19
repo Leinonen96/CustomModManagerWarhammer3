@@ -1,0 +1,117 @@
+/* --- STUDIO GLASSMORPHIC RIGHT-CLICK CONTEXT MENU --- */
+
+.custom-context-menu {
+    position: fixed;
+    z-index: 10000;
+    display: none;
+    flex-direction: column;
+    width: 260px;
+    background: rgba(14, 17, 24, 0.96);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--color-border-medium);
+    border-radius: var(--radius-md);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    padding: 5px;
+    gap: 2px;
+    user-select: none;
+    opacity: 0;
+    transform: scale(0.96);
+    transition: opacity 0.08s ease, transform 0.08s ease;
+    pointer-events: none;
+}
+
+.custom-context-menu.visible {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+}
+
+.menu-header {
+    padding: 6px 10px 4px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow: hidden;
+}
+
+.menu-mod-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.menu-mod-id {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--color-primary);
+    font-weight: 600;
+}
+
+.menu-divider {
+    height: 1px;
+    background: var(--color-border-subtle);
+    margin: 4px 2px;
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 6px 9px;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-secondary);
+    font-size: 0.80rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: background-color 0.08s ease, color 0.08s ease;
+}
+
+.menu-item:hover {
+    background: var(--color-bg-card-hover);
+    color: var(--color-text-primary);
+}
+
+.menu-icon {
+    width: 14px;
+    height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--color-text-muted);
+}
+
+.menu-icon svg {
+    width: 14px;
+    height: 14px;
+}
+
+.menu-item:hover .menu-icon {
+    color: var(--color-primary);
+}
+
+.menu-label {
+    flex-grow: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.menu-item-danger {
+    color: #f87171;
+}
+
+.menu-item-danger:hover {
+    background: rgba(239, 68, 68, 0.15);
+    color: #fca5a5;
+}
+
+.menu-item-danger .menu-icon {
+    color: #f87171;
+}

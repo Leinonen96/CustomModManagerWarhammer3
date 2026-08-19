@@ -23,3 +23,28 @@ pub fn apply_load_order(mods: Vec<Mod>) -> AppResult<LoadOrderResult> {
         config.auto_backup,
     )
 }
+
+#[command]
+pub fn launch_game() -> AppResult<()> {
+    #[cfg(unix)]
+    {
+        let steam_res = std::process::Command::new("steam")
+            .arg("steam://run/1142710//")
+            .spawn();
+
+        if steam_res.is_err() {
+            let _ = std::process::Command::new("xdg-open")
+                .arg("steam://rungameid/1142710")
+                .spawn();
+        }
+    }
+
+    #[cfg(windows)]
+    {
+        let _ = std::process::Command::new("cmd")
+            .args(["/C", "start", "", "steam://run/1142710//"])
+            .spawn();
+    }
+
+    Ok(())
+}

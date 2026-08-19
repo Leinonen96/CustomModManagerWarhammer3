@@ -24,9 +24,11 @@ pub fn run() {
             delete_preset,
             apply_load_order,
             open_url,
+            open_path,
             analyze_load_order_conflicts,
             get_pack_file_tree,
-            auto_sort_dependencies
+            auto_sort_dependencies,
+            launch_game
         ])
         .run(tauri::generate_context!())
         .expect("error while running Total War: WARHAMMER III Mod Manager");

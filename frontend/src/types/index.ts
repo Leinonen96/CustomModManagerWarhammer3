@@ -79,6 +79,14 @@ export interface ConflictAnalysisResult {
     detailed_conflicts: FileConflictDetail[];
 }
 
+export type RuleType = 'above' | 'below';
+
+export interface UserOverrideRule {
+    source_mod: string;
+    target_mod: string;
+    rule_type: RuleType;
+}
+
 export interface AppConfig {
     workshop_dir?: string;
     game_data_dir?: string;
@@ -91,6 +99,8 @@ export interface AppConfig {
     theme?: string;
     last_preset?: string;
     ui_scale?: number;
+    pinned_mods?: Record<string, number>;
+    user_rules?: UserOverrideRule[];
 }
 
 export interface PathValidationStatus {

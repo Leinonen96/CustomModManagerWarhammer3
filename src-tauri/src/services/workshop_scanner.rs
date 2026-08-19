@@ -45,9 +45,8 @@ impl WorkshopScanner {
             let pack_files: Vec<&PathBuf> = files
                 .iter()
                 .filter(|p| {
-                    p.extension().map_or(false, |ext| {
-                        ext.to_string_lossy().eq_ignore_ascii_case("pack")
-                    })
+                    p.extension()
+                        .is_some_and(|ext| ext.to_string_lossy().eq_ignore_ascii_case("pack"))
                 })
                 .collect();
 
@@ -111,7 +110,7 @@ impl WorkshopScanner {
             }
         }
 
-        mods.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
+        mods.sort_by_key(|a| a.title.to_lowercase());
         mods
     }
 
@@ -127,18 +126,16 @@ impl WorkshopScanner {
                 let stem_str = stem.to_string_lossy().to_lowercase();
                 if let Some(ext) = file.extension() {
                     let ext_str = ext.to_string_lossy().to_lowercase();
-                    if ext_str == "png"
+                    if (ext_str == "png"
                         || ext_str == "jpg"
                         || ext_str == "jpeg"
-                        || ext_str == "webp"
-                    {
-                        if stem_str == base_stem
+                        || ext_str == "webp")
+                        && (stem_str == base_stem
                             || stem_str == "thumbnail"
                             || stem_str == "thumb"
-                            || stem_str == "preview"
-                        {
-                            return Some(file.clone());
-                        }
+                            || stem_str == "preview")
+                    {
+                        return Some(file.clone());
                     }
                 }
             }

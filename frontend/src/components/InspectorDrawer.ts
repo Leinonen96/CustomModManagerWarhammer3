@@ -114,12 +114,15 @@ export class InspectorDrawer {
 
     private syncDrawerVisibility(): void {
         const isOpen = store.getIsDrawerOpen();
+        const workspace = document.getElementById('app-workspace');
         if (isOpen) {
             this.drawerEl.classList.add('open');
             document.body.classList.add('drawer-open');
+            workspace?.classList.add('inspector-open');
         } else {
             this.drawerEl.classList.remove('open');
             document.body.classList.remove('drawer-open');
+            workspace?.classList.remove('inspector-open');
         }
     }
 
@@ -273,16 +276,16 @@ export class InspectorDrawer {
                         <div class="conflict-summary-box">
                             <div class="summary-stat-row">
                                 <span class="summary-label">Script/UI Overrides Won:</span>
-                                <span class="summary-val val-won">▲ ${summary.script_overrides_won + summary.ui_overrides_won} files</span>
+                                <span class="summary-val val-won"><svg class="inline-stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"></polyline></svg> ${summary.script_overrides_won + summary.ui_overrides_won} files</span>
                             </div>
                             <div class="summary-stat-row">
                                 <span class="summary-label">Script/UI Overrides Lost:</span>
-                                <span class="summary-val val-lost">▼ ${summary.script_overrides_lost + summary.ui_overrides_lost} files</span>
+                                <span class="summary-val val-lost"><svg class="inline-stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg> ${summary.script_overrides_lost + summary.ui_overrides_lost} files</span>
                             </div>
                             ${summary.fatal_startpos_count > 0 ? `
                                 <div class="summary-stat-row summary-danger">
                                     <span class="summary-label">Fatal Startpos Collisions:</span>
-                                    <span class="summary-val">❌ ${summary.fatal_startpos_count} file(s)</span>
+                                    <span class="summary-val"><svg class="inline-stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg> ${summary.fatal_startpos_count} file(s)</span>
                                 </div>
                             ` : ''}
                         </div>
@@ -293,7 +296,10 @@ export class InspectorDrawer {
                 <div class="drawer-section">
                     <details class="tech-specs-accordion" open>
                         <summary class="tech-specs-summary">
-                            <span>⚙️ Advanced Technical Specifications</span>
+                            <span style="display: inline-flex; align-items: center; gap: 6px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                                Advanced Technical Specifications
+                            </span>
                         </summary>
                         <div class="tech-specs-content">
                             <div class="tech-spec-row">
@@ -312,14 +318,18 @@ export class InspectorDrawer {
                                 <span class="tech-spec-label">Multiplayer Checksum:</span>
                                 <div class="tech-spec-copyable">
                                     <code class="hash-text" title="${escapeHtml(hash)}">${escapeHtml(hash)}</code>
-                                    <button type="button" class="btn btn-secondary btn-sm btn-copy-hash" title="Copy Checksum for Co-Op Sync">📋 Copy</button>
+                                    <button type="button" class="btn btn-secondary btn-sm btn-copy-hash" title="Copy Checksum for Co-Op Sync">
+                                        <svg class="btn-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> Copy
+                                    </button>
                                 </div>
                             </div>
                             <div class="tech-spec-row">
                                 <span class="tech-spec-label">Normalized Path:</span>
                                 <div class="tech-spec-copyable">
                                     <code class="path-text" title="${escapeHtml(mod.real_path)}">${escapeHtml(mod.real_path)}</code>
-                                    <button type="button" class="btn btn-secondary btn-sm btn-copy-path" title="Copy Full File Path">📋 Copy</button>
+                                    <button type="button" class="btn btn-secondary btn-sm btn-copy-path" title="Copy Full File Path">
+                                        <svg class="btn-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> Copy
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -350,7 +360,7 @@ export class InspectorDrawer {
         if (!conflictAnalysis || !summary || summary.total_conflicts === 0) {
             this.bodyEl.innerHTML = `
                 <div class="drawer-empty-state">
-                    <span class="empty-icon">✅</span>
+                    <span class="empty-icon"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></span>
                     <h4>No Load Order Conflicts</h4>
                     <p>This mod has zero overlapping files or collisions with other active mods in your current load order.</p>
                 </div>
@@ -362,28 +372,46 @@ export class InspectorDrawer {
             (c: FileConflictDetail) => c.winner_mod === mod.name || c.loser_mod === mod.name
         );
 
+        const allMods = store.getAllMods();
         let conflictsListHtml = '';
         relevantConflicts.forEach(c => {
             const isWinner = c.winner_mod === mod.name;
             const otherModName = isWinner ? c.loser_mod : c.winner_mod;
             const otherIndex = isWinner ? c.loser_index : c.winner_index;
 
+            const otherMod = allMods.find(m => (m.name && m.name === otherModName) || (m.id && m.id === otherModName));
+            let otherThumbSrc = '/gemini-svg.svg';
+            if (otherMod?.thumb) {
+                if (otherMod.thumb.startsWith('/') || otherMod.thumb.includes(':\\')) {
+                    try {
+                        otherThumbSrc = convertFileSrc(otherMod.thumb);
+                    } catch {
+                        otherThumbSrc = otherMod.thumb;
+                    }
+                } else {
+                    otherThumbSrc = otherMod.thumb;
+                }
+            }
+
             let badgeClass = 'diff-badge-won';
-            let badgeText = '▲ OVERRIDING';
+            let badgeIcon = `<svg class="diff-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"></polyline></svg>`;
+            let badgeText = 'OVERWRITING';
             let actionHtml = '';
 
             if (c.severity === 'FatalStartpos') {
                 badgeClass = 'diff-badge-fatal';
-                badgeText = '❌ FATAL STARTPOS';
+                badgeIcon = `<svg class="diff-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`;
+                badgeText = 'FATAL CONFLICT';
             } else if (!isWinner) {
                 badgeClass = 'diff-badge-lost';
-                badgeText = '▼ OVERRIDDEN';
+                badgeIcon = `<svg class="diff-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>`;
+                badgeText = 'OVERWRITTEN BY';
                 actionHtml = `
                     <button type="button" class="btn btn-secondary btn-sm btn-resolve-above" 
                             data-other-mod="${escapeHtml(otherModName)}" 
                             data-other-index="${otherIndex}"
-                            title="Move this mod above ${escapeHtml(otherModName)} to take priority">
-                        ⤒ Move Above Winner
+                            title="Move this mod above #${otherIndex} to prioritize its files in-game">
+                        <svg class="btn-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline><line x1="6" y1="5" x2="18" y2="5"></line></svg> Prioritize Above #${otherIndex}
                     </button>
                 `;
             } else {
@@ -391,20 +419,28 @@ export class InspectorDrawer {
                     <button type="button" class="btn btn-secondary btn-sm btn-resolve-below" 
                             data-other-mod="${escapeHtml(otherModName)}" 
                             data-other-index="${otherIndex}"
-                            title="Move this mod below ${escapeHtml(otherModName)} to let it take priority">
-                        ⤓ Move Below Loser
+                            title="Move this mod below #${otherIndex} to let #${otherIndex} take priority">
+                        <svg class="btn-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline><line x1="6" y1="19" x2="18" y2="19"></line></svg> Load Below #${otherIndex}
                     </button>
                 `;
             }
 
             conflictsListHtml += `
-                <div class="conflict-card ${isWinner ? 'conflict-winner' : 'conflict-loser'}">
-                    <div class="conflict-header-row">
-                        <span class="diff-badge ${badgeClass}">${badgeText}</span>
-                        <span class="conflict-partner">vs #${otherIndex} ${escapeHtml(otherModName)}</span>
+                <div class="conflict-card ${isWinner ? 'conflict-winner' : 'conflict-loser'}" data-severity="${c.severity || 'normal'}">
+                    <div class="conflict-card-body">
+                        <div class="conflict-thumb-container">
+                            <img class="conflict-thumb" width="56" height="56" loading="lazy" src="${otherThumbSrc}" alt="${escapeHtml(otherModName)}" onerror="this.src='/gemini-svg.svg';this.classList.add('fallback-thumb');">
+                        </div>
+                        <div class="conflict-main-info">
+                            <div class="conflict-header-row">
+                                <span class="diff-badge ${badgeClass}">${badgeIcon} ${badgeText}</span>
+                                <span class="conflict-partner" title="${escapeHtml(otherMod?.title || otherModName)}">vs #${otherIndex} ${escapeHtml(otherMod?.title || otherModName)}</span>
+                            </div>
+                            <span class="conflict-filename" title="${escapeHtml(otherModName)}">${escapeHtml(otherModName)}</span>
+                            <code class="conflict-filepath" title="${escapeHtml(c.internal_path)}">${escapeHtml(c.internal_path)}</code>
+                            ${actionHtml ? `<div class="conflict-card-actions">${actionHtml}</div>` : ''}
+                        </div>
                     </div>
-                    <code class="conflict-filepath">${escapeHtml(c.internal_path)}</code>
-                    ${actionHtml ? `<div class="conflict-card-actions">${actionHtml}</div>` : ''}
                 </div>
             `;
         });
@@ -420,12 +456,17 @@ export class InspectorDrawer {
             </div>
         `;
 
-        // Bind quick resolution buttons
+        // Bind quick resolution buttons with persistent rule saving
         this.bodyEl.querySelectorAll('.btn-resolve-above').forEach(btn => {
             const el = btn as HTMLElement;
             el.onclick = () => {
                 const targetIndex = parseInt(el.dataset.otherIndex || '1', 10);
+                const otherName = el.dataset.otherMod || '';
                 this.moveInspectedModToPosition(mod, Math.max(1, targetIndex));
+                if (otherName) {
+                    store.addUserRule(mod.name, otherName, 'above');
+                    Toast.success(`Saved rule: Always prioritize "${mod.title || mod.name}" above "${otherName}" in Auto-Sort`);
+                }
             };
         });
 
@@ -433,7 +474,12 @@ export class InspectorDrawer {
             const el = btn as HTMLElement;
             el.onclick = () => {
                 const targetIndex = parseInt(el.dataset.otherIndex || '1', 10);
+                const otherName = el.dataset.otherMod || '';
                 this.moveInspectedModToPosition(mod, targetIndex + 1);
+                if (otherName) {
+                    store.addUserRule(mod.name, otherName, 'below');
+                    Toast.success(`Saved rule: Always load "${mod.title || mod.name}" below "${otherName}" in Auto-Sort`);
+                }
             };
         });
     }
@@ -446,7 +492,13 @@ export class InspectorDrawer {
 
         let prereqsHtml = '';
         if (deps.length === 0) {
-            if (summary?.is_framework) {
+            if (manifest && !manifest.is_valid_pack) {
+                prereqsHtml = `
+                    <div class="drawer-empty-state-mini">
+                        <p>Unable to parse pack dependencies (Pack is corrupted or non-standard format).</p>
+                    </div>
+                `;
+            } else if (summary?.is_framework) {
                 prereqsHtml = `
                     <div class="dep-root-banner">
                         <span class="dep-root-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg></span>
@@ -459,7 +511,7 @@ export class InspectorDrawer {
             } else {
                 prereqsHtml = `
                     <div class="drawer-empty-state-mini">
-                        <p>No prerequisite dependencies declared in this pack.</p>
+                        <p>This mod has no explicit internal PFH dependencies declared in its packfile header.</p>
                     </div>
                 `;
             }
@@ -553,7 +605,9 @@ export class InspectorDrawer {
         try {
             this.autoSortBtn.disabled = true;
             this.autoSortBtn.innerHTML = '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> Sorting...';
-            const sorted = await autoSortDependencies(active);
+            const pinned = store.getPinnedModsObject();
+            const rules = store.getUserRules();
+            const sorted = await autoSortDependencies(active, pinned, rules);
             store.setActiveMods(sorted);
             Toast.success(`Auto-sorted ${sorted.length} active mods by dependency DAG!`);
         } catch (err: any) {

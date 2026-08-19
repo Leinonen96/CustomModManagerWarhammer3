@@ -6,6 +6,12 @@ pub struct PresetRepository {
     presets_dir: PathBuf,
 }
 
+impl Default for PresetRepository {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PresetRepository {
     pub fn new() -> Self {
         let app_dir = dirs::config_dir()
@@ -37,7 +43,7 @@ impl PresetRepository {
                 let path = entry.path();
                 if path
                     .extension()
-                    .map_or(false, |ext| ext.eq_ignore_ascii_case("json"))
+                    .is_some_and(|ext| ext.eq_ignore_ascii_case("json"))
                 {
                     if let Some(stem) = path.file_stem() {
                         list.push(stem.to_string_lossy().to_string());
@@ -45,7 +51,7 @@ impl PresetRepository {
                 }
             }
         }
-        list.sort_by(|a, b| a.to_lowercase().cmp(&b.to_lowercase()));
+        list.sort_by_key(|a| a.to_lowercase());
         list
     }
 
