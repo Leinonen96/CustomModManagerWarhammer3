@@ -65,11 +65,21 @@ jobs:
       - name: Install NPM dependencies
         run: npm ci
 
+      - name: Prepare signing key
+        shell: bash
+        run: |
+          TRIMMED_KEY=$(echo -n "${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}" | tr -d '\r\n[:space:]')
+          echo "TAURI_SIGNING_PRIVATE_KEY=$TRIMMED_KEY" >> $GITHUB_ENV
+          KEY_PATH="${{ runner.temp }}/tauri.key"
+          echo -n "$TRIMMED_KEY" > "$KEY_PATH"
+          echo "TAURI_SIGNING_PRIVATE_KEY_PATH=$KEY_PATH" >> $GITHUB_ENV
+
       - name: Build Tauri Desktop Application & Bundles
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ env.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PATH: ${{ env.TAURI_SIGNING_PRIVATE_KEY_PATH }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
