@@ -2,6 +2,10 @@
  * Shared Type Definitions for Warhammer 3 Mod Manager Frontend (Tauri v2).
  */
 
+declare global {
+    const __APP_VERSION__: string;
+}
+
 export interface Mod {
     id: string;
     name: string;

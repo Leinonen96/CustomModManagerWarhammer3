@@ -72,7 +72,7 @@ export class UpdateModal {
     private render(): void {
         if (!this.currentUpdate) return;
 
-        const currentVer = this.currentUpdate.currentVersion || '2.0.0';
+        const currentVer = this.currentUpdate.currentVersion || (typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '2.1.0');
         const newVer = this.currentUpdate.version;
         const releaseDate = this.currentUpdate.date
             ? new Date(this.currentUpdate.date).toLocaleDateString(undefined, {

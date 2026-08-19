@@ -80,7 +80,7 @@ export class SettingsModal extends Modal {
             <div class="form-group settings-update-group">
                 <div class="form-label-row">
                     <label>Application & Updates</label>
-                    <span class="version-display-badge">v2.0.0</span>
+                    <span id="settings-app-version" class="version-display-badge">v${typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '2.1.0'}</span>
                 </div>
                 <div class="settings-update-row">
                     <button type="button" class="btn btn-secondary btn-sm" id="btn-settings-check-updates">
