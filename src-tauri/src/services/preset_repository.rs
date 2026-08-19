@@ -8,8 +8,25 @@ pub struct PresetRepository {
 
 impl PresetRepository {
     pub fn new() -> Self {
-        let presets_dir = PathBuf::from("presets");
+        let app_dir = dirs::config_dir()
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join("wh3-mod-manager");
+        let presets_dir = app_dir.join("presets");
         let _ = fs::create_dir_all(&presets_dir);
+
+        // Migrate legacy ./presets if present
+        let legacy_presets = PathBuf::from("presets");
+        if legacy_presets.exists() && legacy_presets.is_dir() {
+            if let Ok(entries) = fs::read_dir(&legacy_presets) {
+                for entry in entries.flatten() {
+                    let dest = presets_dir.join(entry.file_name());
+                    if !dest.exists() {
+                        let _ = fs::copy(entry.path(), dest);
+                    }
+                }
+            }
+        }
+
         Self { presets_dir }
     }
 

@@ -9,7 +9,18 @@ pub struct ConfigStore {
 
 impl ConfigStore {
     pub fn new() -> Self {
-        let config_path = PathBuf::from("config.json");
+        let app_dir = dirs::config_dir()
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join("wh3-mod-manager");
+        let _ = fs::create_dir_all(&app_dir);
+        let config_path = app_dir.join("config.json");
+
+        // Migrate legacy ./config.json from working directory if present
+        let legacy_config = PathBuf::from("config.json");
+        if legacy_config.exists() && !config_path.exists() {
+            let _ = fs::copy(&legacy_config, &config_path);
+        }
+
         Self { config_path }
     }
 
