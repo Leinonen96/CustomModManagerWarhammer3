@@ -5,6 +5,7 @@ import { Modal } from './Modal';
 import { store } from '../state/store';
 import { fetchConfig, saveConfig, validateConfigPaths, autoDetectPaths, pickFolder } from '../api/configApi';
 import { fetchMods } from '../api/modApi';
+import { updateController } from '../controllers/UpdateController';
 import { Toast } from './Toast';
 
 export class SettingsModal extends Modal {
@@ -15,6 +16,8 @@ export class SettingsModal extends Modal {
     private browseDataBtn!: HTMLButtonElement;
     private browseScriptBtn!: HTMLButtonElement;
     private autoDetectBtn!: HTMLButtonElement;
+    private checkUpdatesBtn!: HTMLButtonElement;
+    private autoCheckUpdatesInput!: HTMLInputElement;
     private saveBtn!: HTMLButtonElement;
     private cancelBtn!: HTMLButtonElement;
 
@@ -27,7 +30,7 @@ export class SettingsModal extends Modal {
     private render(): void {
         this.modalBox.innerHTML = `
             <div class="modal-header">
-                <h2>⚙️ Mod Manager Settings</h2>
+                <h2><svg class="modal-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> Mod Manager Settings</h2>
                 <button class="btn-close" id="settings-close-icon">&times;</button>
             </div>
             <p class="modal-desc">Configure the paths for your Warhammer 3 installation and Proton/Steam user scripts.</p>
@@ -39,7 +42,9 @@ export class SettingsModal extends Modal {
                 </div>
                 <div class="input-with-browse">
                     <input type="text" id="config-workshop" placeholder=".../steamapps/workshop/content/1142710">
-                    <button type="button" class="btn btn-secondary btn-sm" id="btn-browse-workshop" title="Browse for Workshop folder">📁 Browse</button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btn-browse-workshop" title="Browse for Workshop folder">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg> Browse
+                    </button>
                 </div>
                 <small class="help-text">Where Steam downloads subscribed .pack files and preview images.</small>
             </div>
@@ -51,7 +56,9 @@ export class SettingsModal extends Modal {
                 </div>
                 <div class="input-with-browse">
                     <input type="text" id="config-data" placeholder=".../Total War WARHAMMER III/data">
-                    <button type="button" class="btn btn-secondary btn-sm" id="btn-browse-data" title="Browse for Game Data folder">📁 Browse</button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btn-browse-data" title="Browse for Game Data folder">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg> Browse
+                    </button>
                 </div>
                 <small class="help-text">The game's actual data folder where mod symlinks are placed.</small>
             </div>
@@ -63,13 +70,36 @@ export class SettingsModal extends Modal {
                 </div>
                 <div class="input-with-browse">
                     <input type="text" id="config-script" placeholder=".../scripts/user.script.txt">
-                    <button type="button" class="btn btn-secondary btn-sm" id="btn-browse-script" title="Browse for Scripts folder">📁 Browse</button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btn-browse-script" title="Browse for Scripts folder">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg> Browse
+                    </button>
                 </div>
                 <small class="help-text">The script file that commands the game engine's active load order.</small>
             </div>
 
+            <div class="form-group settings-update-group">
+                <div class="form-label-row">
+                    <label>Application & Updates</label>
+                    <span class="version-display-badge">v2.0.0</span>
+                </div>
+                <div class="settings-update-row">
+                    <button type="button" class="btn btn-secondary btn-sm" id="btn-settings-check-updates">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg> Check for Updates
+                    </button>
+                    <label class="checkbox-label" for="config-auto-check-updates">
+                        <input type="checkbox" id="config-auto-check-updates" checked>
+                        <span>Automatically check for updates on startup</span>
+                    </label>
+                </div>
+            </div>
+
             <div class="modal-buttons">
-                <button type="button" class="btn btn-secondary" id="btn-autodetect">🔍 Auto-Detect Paths</button>
+                <button type="button" class="btn btn-secondary" id="btn-autodetect">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Auto-Detect Paths
+                </button>
                 <div style="flex-grow: 1;"></div>
                 <button type="button" class="btn btn-secondary" id="close-modal-btn">Cancel</button>
                 <button type="button" class="btn btn-primary" id="btn-save-settings">Save & Apply</button>
@@ -83,6 +113,8 @@ export class SettingsModal extends Modal {
         this.browseDataBtn = this.modalBox.querySelector('#btn-browse-data') as HTMLButtonElement;
         this.browseScriptBtn = this.modalBox.querySelector('#btn-browse-script') as HTMLButtonElement;
         this.autoDetectBtn = this.modalBox.querySelector('#btn-autodetect') as HTMLButtonElement;
+        this.checkUpdatesBtn = this.modalBox.querySelector('#btn-settings-check-updates') as HTMLButtonElement;
+        this.autoCheckUpdatesInput = this.modalBox.querySelector('#config-auto-check-updates') as HTMLInputElement;
         this.saveBtn = this.modalBox.querySelector('#btn-save-settings') as HTMLButtonElement;
         this.cancelBtn = this.modalBox.querySelector('#close-modal-btn') as HTMLButtonElement;
     }
@@ -91,6 +123,18 @@ export class SettingsModal extends Modal {
         this.cancelBtn.onclick = () => this.close();
         const closeIcon = this.modalBox.querySelector('#settings-close-icon') as HTMLElement;
         if (closeIcon) closeIcon.onclick = () => this.close();
+
+        // Check for updates handler
+        this.checkUpdatesBtn.onclick = async () => {
+            this.checkUpdatesBtn.disabled = true;
+            this.checkUpdatesBtn.innerHTML = '<svg class="btn-icon spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a10 10 0 0 1 10 10"></path></svg> Checking...';
+            try {
+                await updateController.checkForUpdates(false);
+            } finally {
+                this.checkUpdatesBtn.disabled = false;
+                this.checkUpdatesBtn.innerHTML = '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Check for Updates';
+            }
+        };
 
         // Native folder browsing handlers
         this.browseWorkshopBtn.onclick = async () => {
@@ -110,17 +154,17 @@ export class SettingsModal extends Modal {
         };
 
         this.browseScriptBtn.onclick = async () => {
-            const path = await pickFolder('Select Warhammer3 scripts Directory');
+            const path = await pickFolder('Select Total War WARHAMMER III Scripts Directory');
             if (path) {
-                const scriptPath = path.endsWith('.txt') ? path : `${path}/user.script.txt`;
-                this.scriptInput.value = scriptPath;
+                const normPath = path.replace(/\\/g, '/');
+                this.scriptInput.value = normPath.endsWith('user.script.txt') ? normPath : `${normPath}/user.script.txt`;
                 this.updateValidationBadges();
             }
         };
 
         this.autoDetectBtn.onclick = async () => {
             this.autoDetectBtn.disabled = true;
-            this.autoDetectBtn.innerText = 'Detecting...';
+            this.autoDetectBtn.innerHTML = '<svg class="btn-icon spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a10 10 0 0 1 10 10"></path></svg> Detecting...';
             try {
                 const res = await autoDetectPaths();
                 if (res.data?.detected) {
@@ -136,7 +180,7 @@ export class SettingsModal extends Modal {
                 Toast.error(`Detection failed: ${err.message}`);
             } finally {
                 this.autoDetectBtn.disabled = false;
-                this.autoDetectBtn.innerText = '🔍 Auto-Detect Paths';
+                this.autoDetectBtn.innerHTML = '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Auto-Detect Paths';
             }
         };
 
@@ -146,6 +190,7 @@ export class SettingsModal extends Modal {
                 game_data_dir: this.dataInput.value.trim(),
                 script_file: this.scriptInput.value.trim(),
                 auto_backup: true,
+                auto_check_updates: this.autoCheckUpdatesInput.checked,
                 theme: 'dark'
             };
 
@@ -181,6 +226,7 @@ export class SettingsModal extends Modal {
             this.workshopInput.value = config.workshop_dir || config.WORKSHOP_DIR || '';
             this.dataInput.value = config.game_data_dir || config.GAME_DATA_DIR || '';
             this.scriptInput.value = config.script_file || config.SCRIPT_FILE || '';
+            this.autoCheckUpdatesInput.checked = config.auto_check_updates !== false;
             this.updateValidationBadges();
         } catch (err) {
             console.error('Failed to load settings', err);

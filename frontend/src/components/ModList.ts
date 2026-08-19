@@ -1,11 +1,14 @@
 /**
- * Mod list manager integrating SortableJS, async conflict indexing, and inspector highlights.
+ * High-performance Mod list manager integrating SortableJS, Keyed DOM Reconciliation,
+ * Event Delegation, fast RAF-batched filtering, and async conflict indexing.
  */
 import Sortable from 'sortablejs';
 import { store } from '../state/store';
 import { Mod } from '../types';
-import { createModCard, ModCardCallbacks } from './ModCard';
+import { createModCard, updateModCardState, updateModCardConflicts, getModIdentifier } from './ModCard';
 import { Toast } from './Toast';
+import { showInputDialog } from './Modal';
+import { tauriInvoke } from '../api/client';
 import { analyzeLoadOrderConflicts } from '../api/conflictApi';
 
 export class ModListManager {
@@ -17,6 +20,10 @@ export class ModListManager {
     private sortableActive: Sortable | null = null;
     private isInternalDrag: boolean = false;
     private conflictDebounceTimer: any = null;
+    private filterRafId: number | null = null;
+
+    // Persistent DOM Node Cache keyed by mod identifier (name or id)
+    private cardCache: Map<string, HTMLElement> = new Map();
 
     constructor(inactiveContainerId: string, activeContainerId: string) {
         this.inactiveContainer = document.getElementById(inactiveContainerId) as HTMLElement;
@@ -25,6 +32,7 @@ export class ModListManager {
         this.activeCountBadge = document.getElementById('count-active');
 
         this.initSortable();
+        this.bindDelegatedEvents();
         this.bindStoreEvents();
     }
 
@@ -50,6 +58,78 @@ export class ModListManager {
 
         if (this.activeContainer) {
             this.sortableActive = new Sortable(this.activeContainer, commonOptions);
+        }
+    }
+
+    /**
+     * Single high-performance Event Delegation listener for all card actions.
+     * Eliminates thousands of per-card event closures and memory leaks.
+     */
+    private bindDelegatedEvents(): void {
+        const handleContainerClick = (e: MouseEvent, isSourceActive: boolean) => {
+            const target = e.target as HTMLElement | null;
+            if (!target) return;
+
+            // Find closest actionable element
+            const actionEl = target.closest('[data-action]') as HTMLElement | null;
+            if (!actionEl) return;
+
+            const cardEl = actionEl.closest('.mod-item') as HTMLElement | null;
+            if (!cardEl) return;
+
+            const modName = cardEl.dataset.name || '';
+            const modId = cardEl.dataset.id || '';
+            const allMods = store.getAllMods();
+            const mod = allMods.find(m => (m.name && m.name === modName) || (m.id && m.id === modId)) || {
+                name: modName,
+                id: modId,
+                title: cardEl.querySelector('.mod-title')?.textContent || modName || modId,
+                real_path: '',
+                thumb: '/static/gemini-svg.svg',
+                url: cardEl.dataset.steamUrl || ''
+            };
+
+            const action = actionEl.dataset.action;
+
+            if (action === 'steam') {
+                e.preventDefault();
+                e.stopPropagation();
+                const steamUrl = cardEl.dataset.steamUrl || mod.url || `https://steamcommunity.com/sharedfiles/filedetails/?id=${mod.id}`;
+                tauriInvoke('open_url', { url: steamUrl });
+            } else if (action === 'inspect') {
+                e.stopPropagation();
+                store.setInspectedMod(mod);
+            } else if (action === 'top') {
+                e.stopPropagation();
+                this.moveModToPosition(mod, 1);
+            } else if (action === 'bottom') {
+                e.stopPropagation();
+                this.moveModToPosition(mod, store.getActiveMods().length);
+            } else if (action === 'deactivate') {
+                e.stopPropagation();
+                this.deactivateMod(mod);
+            } else if (action === 'add') {
+                e.stopPropagation();
+                this.activateMod(mod, 'bottom');
+            } else if (action === 'add-top') {
+                e.stopPropagation();
+                this.activateMod(mod, 'top');
+            } else if (action === 'inject') {
+                e.stopPropagation();
+                this.promptInjectMod(mod);
+            } else if (action === 'edit-order') {
+                if (isSourceActive) {
+                    e.stopPropagation();
+                    this.startInlineOrderEdit(cardEl, mod);
+                }
+            }
+        };
+
+        if (this.inactiveContainer) {
+            this.inactiveContainer.addEventListener('click', (e) => handleContainerClick(e, false));
+        }
+        if (this.activeContainer) {
+            this.activeContainer.addEventListener('click', (e) => handleContainerClick(e, true));
         }
     }
 
@@ -85,65 +165,28 @@ export class ModListManager {
             } catch (err) {
                 console.warn('Conflict analysis failed:', err);
             }
-        }, 200);
+        }, 180);
     }
 
     private updateConflictBadges(): void {
         const conflictData = store.getConflictAnalysis();
         const summaries = conflictData?.summaries || {};
 
-        const cards = this.activeContainer.querySelectorAll('.mod-item');
-        cards.forEach(card => {
-            const el = card as HTMLElement;
-            const name = el.dataset.name || '';
-            const id = el.dataset.id || '';
+        const cards = this.activeContainer.children;
+        for (let i = 0; i < cards.length; i++) {
+            const cardEl = cards[i] as HTMLElement;
+            const name = cardEl.dataset.name || '';
+            const id = cardEl.dataset.id || '';
             const summary = summaries[name] || (id ? summaries[id] : null);
-
-            const metaEl = el.querySelector('.mod-meta');
-            if (!metaEl) return;
-
-            let badgeGroup = metaEl.querySelector('.conflict-badge-group') as HTMLElement;
-            if (!summary || summary.total_conflicts === 0) {
-                if (badgeGroup) badgeGroup.remove();
-                return;
-            }
-
-            let badgesHtml = '';
-            if (summary.is_framework) {
-                badgesHtml += `<span class="conflict-badge badge-core" title="Core Framework: Foundational parent framework (e.g. Mixer, CBfM, MCT) loaded first.">📦 CORE</span>`;
-            }
-            if (summary.fatal_startpos_count > 0) {
-                badgesHtml += `<span class="conflict-badge badge-fatal" title="Fatal Startpos Collision: ${summary.fatal_startpos_count} file(s)">❌ STARTPOS</span>`;
-            }
-            const won = summary.script_overrides_won + summary.ui_overrides_won;
-            if (won > 0) {
-                badgesHtml += `<span class="conflict-badge badge-won" title="Overrides ${won} script/UI file(s) in lower mods">▲ ${won}</span>`;
-            }
-            const lost = summary.script_overrides_lost + summary.ui_overrides_lost;
-            if (lost > 0) {
-                badgesHtml += `<span class="conflict-badge badge-lost" title="Overridden by higher mods in ${lost} script/UI file(s)">▼ ${lost}</span>`;
-            }
-            if (summary.is_movie_pack) {
-                badgesHtml += `<span class="conflict-badge badge-movie" title="Movie Pack: Auto-loaded first by engine">🎬 MOVIE</span>`;
-            }
-            if (summary.missing_dependencies && summary.missing_dependencies.length > 0) {
-                badgesHtml += `<span class="conflict-badge badge-dep" title="Missing ${summary.missing_dependencies.length} prerequisite mod(s)">⚠️ DEP</span>`;
-            }
-
-            if (!badgesHtml) {
-                if (badgeGroup) badgeGroup.remove();
-                return;
-            }
-
-            if (!badgeGroup) {
-                badgeGroup = document.createElement('div');
-                badgeGroup.className = 'conflict-badge-group';
-                metaEl.appendChild(badgeGroup);
-            }
-            badgeGroup.innerHTML = badgesHtml;
-        });
+            updateModCardConflicts(cardEl, summary, false);
+        }
     }
 
+    /**
+     * High-performance Keyed DOM Reconciliation.
+     * Reuses existing card DOM elements from `cardCache` instead of wiping innerHTML,
+     * maintaining hardware image decodes and eliminating layout reflows.
+     */
     public render(): void {
         const allMods = store.getAllMods();
         const activeMods = store.getActiveMods();
@@ -151,48 +194,57 @@ export class ModListManager {
         const activeNameSet = new Set(activeMods.map(m => m.name || m.id));
         const inactiveMods = allMods.filter(m => !activeNameSet.has(m.name || m.id));
 
-        const callbacks: ModCardCallbacks = {
-            onMoveToPosition: (mod, pos) => this.moveModToPosition(mod, pos),
-            onMoveToTop: (mod) => this.moveModToPosition(mod, 1),
-            onMoveToBottom: (mod) => this.moveModToPosition(mod, activeMods.length),
-            onDeactivate: (mod) => this.deactivateMod(mod),
-            onActivate: (mod, pos) => this.activateMod(mod, pos),
-            onInspect: (mod) => store.setInspectedMod(mod)
-        };
-
-        // Render Inactive mods
-        this.inactiveContainer.innerHTML = '';
+        // 1. Reconcile Inactive Container
         const inactiveFrag = document.createDocumentFragment();
         inactiveMods.forEach(mod => {
-            inactiveFrag.appendChild(createModCard(mod, null, activeMods.length, callbacks));
+            const key = getModIdentifier(mod);
+            let card = this.cardCache.get(key);
+            if (!card) {
+                card = createModCard(mod, null, activeMods.length);
+                this.cardCache.set(key, card);
+            } else {
+                updateModCardState(card, null, activeMods.length);
+            }
+            inactiveFrag.appendChild(card);
         });
-        this.inactiveContainer.appendChild(inactiveFrag);
+        this.inactiveContainer.replaceChildren(inactiveFrag);
 
-        // Render Active mods
-        this.activeContainer.innerHTML = '';
+        // 2. Reconcile Active Container
         const activeFrag = document.createDocumentFragment();
         activeMods.forEach((mod, index) => {
-            activeFrag.appendChild(createModCard(mod, index + 1, activeMods.length, callbacks));
+            const key = getModIdentifier(mod);
+            let card = this.cardCache.get(key);
+            if (!card) {
+                card = createModCard(mod, index + 1, activeMods.length);
+                this.cardCache.set(key, card);
+            } else {
+                updateModCardState(card, index + 1, activeMods.length);
+            }
+            activeFrag.appendChild(card);
         });
-        this.activeContainer.appendChild(activeFrag);
+        this.activeContainer.replaceChildren(activeFrag);
 
         this.updateCounts(inactiveMods.length, activeMods.length);
         this.applyFilters();
+        this.updateConflictBadges();
     }
 
     private updateInspectedHighlight(): void {
         const inspectedMod = store.getInspectedMod();
-        const allCards = document.querySelectorAll('.mod-item');
-        allCards.forEach(c => {
-            const cardEl = c as HTMLElement;
-            const name = cardEl.dataset.name;
-            const id = cardEl.dataset.id;
-            if (inspectedMod && (name === inspectedMod.name || (id && id === inspectedMod.id))) {
-                cardEl.classList.add('mod-item-inspected');
-            } else {
-                cardEl.classList.remove('mod-item-inspected');
+        const inspectedKey = inspectedMod ? getModIdentifier(inspectedMod) : null;
+
+        const updateContainer = (container: HTMLElement) => {
+            const children = container.children;
+            for (let i = 0; i < children.length; i++) {
+                const card = children[i] as HTMLElement;
+                const key = card.dataset.name || card.dataset.id;
+                const isInspected = Boolean(inspectedKey && key === inspectedKey);
+                card.classList.toggle('mod-item-inspected', isInspected);
             }
-        });
+        };
+
+        updateContainer(this.activeContainer);
+        updateContainer(this.inactiveContainer);
     }
 
     public moveModToPosition(mod: Mod, targetPos: number): void {
@@ -245,15 +297,75 @@ export class ModListManager {
         this.highlightCard(mod.name || mod.id);
     }
 
+    private async promptInjectMod(mod: Mod): Promise<void> {
+        const totalActive = store.getActiveMods().length;
+        const inputVal = await showInputDialog({
+            title: 'Inject Mod into Load Order',
+            message: `Enter position # for "${mod.title || mod.name}" (1 to ${totalActive + 1}):`,
+            defaultValue: 1,
+            inputType: 'number',
+            min: 1,
+            max: totalActive + 1,
+            confirmText: 'Inject at Position'
+        });
+
+        if (inputVal !== null) {
+            const pos = parseInt(inputVal.trim(), 10);
+            if (!isNaN(pos) && pos >= 1) {
+                this.activateMod(mod, pos);
+            }
+        }
+    }
+
+    private startInlineOrderEdit(cardEl: HTMLElement, mod: Mod): void {
+        const orderNumEl = cardEl.querySelector('.order-num') as HTMLElement | null;
+        if (!orderNumEl || orderNumEl.querySelector('input')) return;
+
+        const currentPosStr = orderNumEl.innerText.trim();
+        const currentPos = parseInt(currentPosStr, 10) || 1;
+        const totalActive = store.getActiveMods().length;
+
+        orderNumEl.innerHTML = `<input type="number" class="order-input" min="1" max="${Math.max(1, totalActive)}" value="${currentPos}">`;
+        const input = orderNumEl.querySelector('input') as HTMLInputElement;
+        input.focus();
+        input.select();
+
+        let applied = false;
+        const applyPosition = () => {
+            if (applied) return;
+            applied = true;
+            const val = parseInt(input.value, 10);
+            if (!isNaN(val) && val > 0 && val !== currentPos) {
+                this.moveModToPosition(mod, val);
+            } else {
+                orderNumEl.innerText = currentPos.toString();
+            }
+        };
+
+        input.onkeydown = (ke) => {
+            if (ke.key === 'Enter') {
+                ke.preventDefault();
+                applyPosition();
+            } else if (ke.key === 'Escape') {
+                applied = true;
+                orderNumEl.innerText = currentPos.toString();
+            }
+        };
+
+        input.onblur = () => {
+            applyPosition();
+        };
+    }
+
     private highlightCard(identifier: string): void {
         setTimeout(() => {
-            const card = this.activeContainer.querySelector(`[data-name="${identifier}"], [data-id="${identifier}"]`) as HTMLElement;
+            const card = this.activeContainer.querySelector(`[data-name="${identifier}"], [data-id="${identifier}"]`) as HTMLElement | null;
             if (card) {
                 card.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 card.classList.add('mod-item-highlight');
                 setTimeout(() => card.classList.remove('mod-item-highlight'), 1600);
             }
-        }, 80);
+        }, 60);
     }
 
     public syncActiveModsFromDom(): void {
@@ -287,27 +399,35 @@ export class ModListManager {
     }
 
     public updateOrderNumbers(): void {
-        const activeChildren = this.activeContainer.querySelectorAll('.mod-item');
-        activeChildren.forEach((el, index) => {
-            const numEl = el.querySelector('.order-num') as HTMLElement;
-            if (numEl && !numEl.querySelector('input')) {
-                numEl.innerText = (index + 1).toString();
-                numEl.classList.add('order-active');
-            }
-        });
+        const activeChildren = this.activeContainer.children;
+        const totalActive = activeChildren.length;
 
-        const inactiveChildren = this.inactiveContainer.querySelectorAll('.mod-item');
-        inactiveChildren.forEach((el) => {
-            const numEl = el.querySelector('.order-num') as HTMLElement;
-            if (numEl) {
-                numEl.innerText = '-';
-                numEl.classList.remove('order-active');
+        for (let i = 0; i < totalActive; i++) {
+            const el = activeChildren[i] as HTMLElement;
+            const numEl = el.querySelector('.order-num') as HTMLElement | null;
+            if (numEl && !numEl.querySelector('input')) {
+                const targetText = (i + 1).toString();
+                if (numEl.innerText !== targetText) numEl.innerText = targetText;
+                numEl.classList.add('order-active', 'order-editable');
             }
-        });
+            const bottomBtn = el.querySelector('.btn-action-bottom') as HTMLElement | null;
+            if (bottomBtn) {
+                bottomBtn.title = `Move to Bottom (Priority #${totalActive})`;
+            }
+        }
+
+        const inactiveChildren = this.inactiveContainer.children;
+        for (let i = 0; i < inactiveChildren.length; i++) {
+            const el = inactiveChildren[i] as HTMLElement;
+            const numEl = el.querySelector('.order-num') as HTMLElement | null;
+            if (numEl && numEl.innerText !== '-') {
+                numEl.innerText = '-';
+                numEl.classList.remove('order-active', 'order-editable');
+            }
+        }
 
         const allMods = store.getAllMods();
-        const activeMods = store.getActiveMods();
-        this.updateCounts(allMods.length - activeMods.length, activeMods.length);
+        this.updateCounts(allMods.length - totalActive, totalActive);
     }
 
     private updateCounts(inactiveCount: number, activeCount: number): void {
@@ -319,28 +439,36 @@ export class ModListManager {
         }
     }
 
+    /**
+     * Fast RAF-batched filter application.
+     * Uses dataset.search directly with zero DOM layout queries.
+     */
     private applyFilters(): void {
-        const termInactive = store.getSearchInactive();
-        const termActive = store.getSearchActive();
+        if (this.filterRafId !== null) {
+            cancelAnimationFrame(this.filterRafId);
+        }
 
-        this.filterList(this.inactiveContainer, termInactive);
-        this.filterList(this.activeContainer, termActive);
+        this.filterRafId = requestAnimationFrame(() => {
+            const termInactive = store.getSearchInactive();
+            const termActive = store.getSearchActive();
+
+            this.filterList(this.inactiveContainer, termInactive);
+            this.filterList(this.activeContainer, termActive);
+            this.filterRafId = null;
+        });
     }
 
     private filterList(container: HTMLElement, term: string): void {
-        const items = container.querySelectorAll('.mod-item');
-        items.forEach((item) => {
-            const el = item as HTMLElement;
+        const children = container.children;
+        for (let i = 0; i < children.length; i++) {
+            const el = children[i] as HTMLElement;
             if (!term) {
-                el.style.display = 'flex';
-                return;
+                el.classList.remove('mod-item-hidden');
+                continue;
             }
-            const name = (el.dataset.name || '').toLowerCase();
-            const id = (el.dataset.id || '').toLowerCase();
-            const title = (el.querySelector('.mod-title')?.textContent || '').toLowerCase();
-
-            const matches = name.includes(term) || id.includes(term) || title.includes(term);
-            el.style.display = matches ? 'flex' : 'none';
-        });
+            const searchStr = el.dataset.search || '';
+            const matches = searchStr.includes(term);
+            el.classList.toggle('mod-item-hidden', !matches);
+        }
     }
 }

@@ -21,6 +21,7 @@ impl ConfigStore {
                 game_data_dir: detected.game_data_dir,
                 script_file: detected.script_file,
                 auto_backup: true,
+                auto_check_updates: true,
                 theme: "dark".to_string(),
                 last_preset: None,
                 ui_scale: Some(1.0),

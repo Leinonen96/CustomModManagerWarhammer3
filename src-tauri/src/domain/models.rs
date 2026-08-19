@@ -34,6 +34,8 @@ pub struct AppConfig {
     pub script_file: String,
     #[serde(default = "default_auto_backup")]
     pub auto_backup: bool,
+    #[serde(default = "default_true")]
+    pub auto_check_updates: bool,
     #[serde(default = "default_theme")]
     pub theme: String,
     #[serde(default)]
@@ -43,6 +45,10 @@ pub struct AppConfig {
 }
 
 fn default_auto_backup() -> bool {
+    true
+}
+
+fn default_true() -> bool {
     true
 }
 
@@ -57,6 +63,7 @@ impl Default for AppConfig {
             game_data_dir: String::new(),
             script_file: String::new(),
             auto_backup: true,
+            auto_check_updates: true,
             theme: "dark".to_string(),
             last_preset: None,
             ui_scale: Some(1.0),

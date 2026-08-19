@@ -83,6 +83,7 @@ export interface AppConfig {
     GAME_DATA_DIR?: string;
     SCRIPT_FILE?: string;
     auto_backup?: boolean;
+    auto_check_updates?: boolean;
     theme?: string;
     last_preset?: string;
     ui_scale?: number;

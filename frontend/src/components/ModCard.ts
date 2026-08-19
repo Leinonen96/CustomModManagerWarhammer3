@@ -1,31 +1,128 @@
 /**
- * Mod item card builder with interactive order badges, conflict indicators, and quick actions.
+ * High-performance Mod item card builder and reconciler.
+ * Uses event delegation, lightweight DOM updates, and data-attributes for 120 FPS scrolling & rendering.
  */
-import { Mod } from '../types';
-import { tauriInvoke } from '../api/client';
+import { Mod, ModConflictSummary } from '../types';
 import { convertFileSrc } from '@tauri-apps/api/core';
-import { showInputDialog } from './Modal';
 import { store } from '../state/store';
 
-export interface ModCardCallbacks {
-    onMoveToPosition?: (mod: Mod, targetPos: number) => void;
-    onMoveToTop?: (mod: Mod) => void;
-    onMoveToBottom?: (mod: Mod) => void;
-    onDeactivate?: (mod: Mod) => void;
-    onActivate?: (mod: Mod, position: 'top' | 'bottom' | number) => void;
-    onInspect?: (mod: Mod) => void;
+export function getModIdentifier(mod: { name?: string; id?: string }): string {
+    return mod.name || mod.id || '';
+}
+
+function escapeHtml(str: string): string {
+    const p = document.createElement('p');
+    p.textContent = str;
+    return p.innerHTML;
+}
+
+const ICONS = {
+    search: `<svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>`,
+    top: `<svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline><line x1="6" y1="5" x2="18" y2="5"></line></svg>`,
+    bottom: `<svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline><line x1="6" y1="19" x2="18" y2="19"></line></svg>`,
+    plus: `<svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`,
+    remove: `<svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`,
+    external: `<svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>`,
+    core: `<svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>`,
+    fatal: `<svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`,
+    up: `<svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"></polyline></svg>`,
+    down: `<svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>`,
+    movie: `<svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg>`,
+    dep: `<svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`
+};
+
+function buildConflictBadgesHtml(summary: ModConflictSummary | null | undefined, isMoviePackMod: boolean = false): string {
+    if (!summary && !isMoviePackMod) return '';
+
+    let badgesHtml = '';
+    if (summary?.is_framework) {
+        badgesHtml += `<span class="conflict-badge badge-core" title="Core Framework: Foundational parent framework (e.g. Mixer, CBfM, MCT) loaded first.">${ICONS.core} CORE</span>`;
+    }
+    if (summary && summary.fatal_startpos_count > 0) {
+        badgesHtml += `<span class="conflict-badge badge-fatal" title="Fatal Conflict: Alters startpos.esf. Multiple startpos mods active will cause campaign crashes.">${ICONS.fatal} STARTPOS</span>`;
+    }
+    if (summary) {
+        const won = summary.script_overrides_won + summary.ui_overrides_won;
+        if (won > 0) {
+            badgesHtml += `<span class="conflict-badge badge-won" title="Winning Override: Overwrites ${won} file(s) in lower-priority active mods.">${ICONS.up} ${won}</span>`;
+        }
+        const lost = summary.script_overrides_lost + summary.ui_overrides_lost;
+        if (lost > 0) {
+            badgesHtml += `<span class="conflict-badge badge-lost" title="Overridden: ${lost} file(s) in this mod are overwritten by higher-priority active mods.">${ICONS.down} ${lost}</span>`;
+        }
+    }
+    if (summary?.is_movie_pack || isMoviePackMod) {
+        badgesHtml += `<span class="conflict-badge badge-movie" title="Movie Pack: Auto-loaded first by the game engine directly from /data (bypasses user script).">${ICONS.movie} MOVIE</span>`;
+    }
+    if (summary?.missing_dependencies && summary.missing_dependencies.length > 0) {
+        badgesHtml += `<span class="conflict-badge badge-dep" title="Missing Dependency: Requires ${summary.missing_dependencies.length} prerequisite mod(s) not in active load order.">${ICONS.dep} DEP</span>`;
+    }
+
+    return badgesHtml;
+}
+
+export function buildConflictSignature(summary: ModConflictSummary | null | undefined, isMovie: boolean): string {
+    if (!summary && !isMovie) return 'none';
+    return [
+        summary?.is_framework ? 1 : 0,
+        summary?.fatal_startpos_count || 0,
+        (summary?.script_overrides_won || 0) + (summary?.ui_overrides_won || 0),
+        (summary?.script_overrides_lost || 0) + (summary?.ui_overrides_lost || 0),
+        (summary?.is_movie_pack || isMovie) ? 1 : 0,
+        summary?.missing_dependencies?.length || 0
+    ].join(':');
+}
+
+export function buildActionsHtml(isOrderActive: boolean, totalActive: number = 0): string {
+    if (isOrderActive) {
+        return `
+            <div class="mod-actions">
+                <button type="button" class="card-action-btn btn-action-inspect" data-action="inspect" title="Inspect Pack Manifest & Conflicts">
+                    ${ICONS.search}<span>Inspect</span>
+                </button>
+                <button type="button" class="card-action-btn btn-action-top" data-action="top" title="Move to Top (Priority #1)">
+                    ${ICONS.top}<span>Top</span>
+                </button>
+                <button type="button" class="card-action-btn btn-action-bottom" data-action="bottom" title="Move to Bottom (Priority #${totalActive})">
+                    ${ICONS.bottom}<span>Bottom</span>
+                </button>
+                <button type="button" class="card-action-btn btn-action-remove" data-action="deactivate" title="Deactivate Mod">
+                    ${ICONS.remove}<span>Remove</span>
+                </button>
+            </div>
+        `;
+    }
+    return `
+        <div class="mod-actions">
+            <button type="button" class="card-action-btn btn-action-inspect" data-action="inspect" title="Inspect Pack Manifest & Contents">
+                ${ICONS.search}<span>Inspect</span>
+            </button>
+            <button type="button" class="card-action-btn btn-action-add" data-action="add" title="Add to bottom of Load Order">
+                ${ICONS.bottom}<span>Bottom</span>
+            </button>
+            <button type="button" class="card-action-btn btn-action-add-top" data-action="add-top" title="Add to top of Load Order">
+                ${ICONS.top}<span>Top</span>
+            </button>
+            <button type="button" class="card-action-btn btn-action-inject" data-action="inject" title="Insert at specific position">
+                ${ICONS.plus}<span>Insert</span>
+            </button>
+        </div>
+    `;
 }
 
 export function createModCard(
     mod: Mod,
     orderNumber: number | null = null,
-    totalActive: number = 0,
-    callbacks?: ModCardCallbacks
+    totalActive: number = 0
 ): HTMLElement {
     const div = document.createElement('div');
     div.className = 'mod-item';
     div.dataset.name = mod.name;
     div.dataset.id = mod.id;
+
+    // Cache pre-computed search string on dataset to eliminate DOM queries during filtering
+    const searchTokens = `${mod.name} ${mod.id} ${mod.title || ''}`.toLowerCase();
+    div.dataset.search = searchTokens;
 
     const inspectedMod = store.getInspectedMod();
     if (inspectedMod && (inspectedMod.name === mod.name || (inspectedMod.id && inspectedMod.id === mod.id))) {
@@ -43,7 +140,7 @@ export function createModCard(
         : `<span class="source-badge badge-local" title="Local Game /data Mod">LOCAL</span>`;
 
     // Fast image conversion via Tauri protocol
-    let finalThumbSrc = '/static/gemini-svg.svg';
+    let finalThumbSrc = '/gemini-svg.svg';
     if (mod.thumb) {
         if (mod.thumb.startsWith('/') || mod.thumb.includes(':\\')) {
             try {
@@ -60,225 +157,122 @@ export function createModCard(
     const orderClass = isOrderActive ? 'order-num order-active order-editable' : 'order-num';
     const orderText = isOrderActive ? orderNumber.toString() : '-';
 
-    // Conflict badges with rich micro-tooltips
-    let conflictBadgesHtml = '';
+    // Conflict badges
     const conflictData = store.getConflictAnalysis();
-    if (conflictData && conflictData.summaries) {
-        const summary = conflictData.summaries[mod.name] || (mod.id ? conflictData.summaries[mod.id] : null);
-        if (summary) {
-            if (summary.is_framework) {
-                conflictBadgesHtml += `<span class="conflict-badge badge-core" title="Core Framework: Foundational parent framework (e.g. Mixer, CBfM, MCT) loaded first.">📦 CORE</span>`;
-            }
-            if (summary.fatal_startpos_count > 0) {
-                conflictBadgesHtml += `<span class="conflict-badge badge-fatal" title="Fatal Conflict: Alters startpos.esf. Multiple startpos mods active will cause campaign crashes.">❌ STARTPOS</span>`;
-            }
-            const won = summary.script_overrides_won + summary.ui_overrides_won;
-            if (won > 0) {
-                conflictBadgesHtml += `<span class="conflict-badge badge-won" title="Winning Override: Overwrites ${won} file(s) in lower-priority active mods.">▲ ${won}</span>`;
-            }
-            const lost = summary.script_overrides_lost + summary.ui_overrides_lost;
-            if (lost > 0) {
-                conflictBadgesHtml += `<span class="conflict-badge badge-lost" title="Overridden: ${lost} file(s) in this mod are overwritten by higher-priority active mods.">▼ ${lost}</span>`;
-            }
-            if (summary.is_movie_pack || mod.is_movie_pack) {
-                conflictBadgesHtml += `<span class="conflict-badge badge-movie" title="Movie Pack: Auto-loaded first by the game engine directly from /data (bypasses user script).">🎬 MOVIE</span>`;
-            }
-            if (summary.missing_dependencies && summary.missing_dependencies.length > 0) {
-                conflictBadgesHtml += `<span class="conflict-badge badge-dep" title="Missing Dependency: Requires ${summary.missing_dependencies.length} prerequisite mod(s) not in active load order.">⚠️ DEP</span>`;
-            }
-        }
-    }
+    const summary = conflictData?.summaries ? (conflictData.summaries[mod.name] || (mod.id ? conflictData.summaries[mod.id] : null)) : null;
+    const conflictSig = buildConflictSignature(summary, Boolean(mod.is_movie_pack));
+    div.dataset.conflictSig = conflictSig;
+    const conflictBadgesHtml = buildConflictBadgesHtml(summary, Boolean(mod.is_movie_pack));
 
-    let actionsHtml = '';
-    if (orderNumber !== null) {
-        actionsHtml = `
-            <div class="mod-actions">
-                <button type="button" class="card-action-btn btn-action-inspect" title="Inspect Pack Manifest & Conflicts">🔍</button>
-                <button type="button" class="card-action-btn btn-action-top" title="Move to Top (Priority #1)">⤒</button>
-                <button type="button" class="card-action-btn btn-action-bottom" title="Move to Bottom (Priority #${totalActive})">⤓</button>
-                <button type="button" class="card-action-btn btn-action-remove" title="Deactivate Mod">✕</button>
-            </div>
-        `;
-    } else {
-        actionsHtml = `
-            <div class="mod-actions">
-                <button type="button" class="card-action-btn btn-action-inspect" title="Inspect Pack Manifest & Contents">🔍</button>
-                <button type="button" class="card-action-btn btn-action-add" title="Add to bottom of Load Order">＋ Bottom</button>
-                <button type="button" class="card-action-btn btn-action-add-top" title="Add to top of Load Order">＋ Top</button>
-                <button type="button" class="card-action-btn btn-action-inject" title="Insert at specific position"># Insert</button>
-            </div>
-        `;
-    }
-
+    const actionsHtml = buildActionsHtml(isOrderActive, totalActive);
     const steamUrl = mod.url || `https://steamcommunity.com/sharedfiles/filedetails/?id=${mod.id}`;
+    div.dataset.steamUrl = steamUrl;
 
     div.innerHTML = `
-        <div class="${orderClass}" title="${isOrderActive ? 'Click to change order position' : ''}">${orderText}</div>
+        <div class="${orderClass}" data-action="edit-order" title="${isOrderActive ? 'Click to change order position' : ''}">${orderText}</div>
         <div class="mod-thumb-container">
-            <img class="mod-thumb" loading="lazy" decoding="async" src="${finalThumbSrc}" alt="${escapeHtml(mod.title || mod.name)}">
+            <img class="mod-thumb" width="72" height="72" loading="lazy" decoding="async" fetchpriority="low" src="${finalThumbSrc}" alt="${escapeHtml(mod.title || mod.name)}" onerror="this.src='/gemini-svg.svg';this.classList.add('fallback-thumb');">
         </div>
         <div class="mod-info">
-            <div class="mod-name-row">
-                <span class="mod-title" title="${escapeHtml(mod.title || mod.name)}">${escapeHtml(mod.title || mod.name)}</span>
-                <div class="mod-badge-cluster">
-                    ${sourceBadge}
-                    ${sizeMb ? `<span class="mod-size-badge">${sizeMb}</span>` : ''}
-                </div>
-            </div>
+            <span class="mod-title" title="${escapeHtml(mod.title || mod.name)}">${escapeHtml(mod.title || mod.name)}</span>
             <span class="mod-filename" title="${escapeHtml(mod.name)}">${escapeHtml(mod.name)}</span>
             <div class="mod-meta">
                 <span class="mod-id">ID: ${escapeHtml(mod.id || 'Local')}</span>
                 <span class="meta-dot">&bull;</span>
-                <a href="${steamUrl}" class="steam-link" title="Open Steam Workshop page">View on Steam ↗</a>
+                <a href="${steamUrl}" class="steam-link" data-action="steam" title="Open Steam Workshop page">View on Steam ${ICONS.external}</a>
                 ${conflictBadgesHtml ? `<div class="conflict-badge-group">${conflictBadgesHtml}</div>` : ''}
             </div>
         </div>
-        ${actionsHtml}
+        <div class="mod-right-section">
+            ${actionsHtml}
+            <div class="mod-badge-cluster">
+                ${sourceBadge}
+                ${sizeMb ? `<span class="mod-size-badge">${sizeMb}</span>` : ''}
+            </div>
+        </div>
     `;
-
-    // Handle Steam link
-    const steamLink = div.querySelector('.steam-link') as HTMLAnchorElement;
-    if (steamLink) {
-        steamLink.onclick = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            tauriInvoke('open_url', { url: steamUrl });
-        };
-    }
-
-    // Handle thumbnail fallback
-    const img = div.querySelector('.mod-thumb') as HTMLImageElement;
-    if (img) {
-        img.onerror = () => {
-            img.src = '/static/gemini-svg.svg';
-            img.classList.add('fallback-thumb');
-        };
-    }
-
-    // Handle inspect trigger
-    const inspectBtn = div.querySelector('.btn-action-inspect') as HTMLButtonElement;
-    if (inspectBtn) {
-        inspectBtn.onclick = (e) => {
-            e.stopPropagation();
-            if (callbacks?.onInspect) {
-                callbacks.onInspect(mod);
-            } else {
-                store.setInspectedMod(mod);
-            }
-        };
-    }
-
-    // Bind Badge click-to-edit for Active mods
-    if (orderNumber !== null && callbacks?.onMoveToPosition) {
-        const orderNumEl = div.querySelector('.order-num') as HTMLElement;
-        orderNumEl.onclick = (e) => {
-            e.stopPropagation();
-            if (orderNumEl.querySelector('input')) return; // Already editing
-
-            const currentPos = orderNumber;
-            orderNumEl.innerHTML = `<input type="number" class="order-input" min="1" max="${Math.max(1, totalActive)}" value="${currentPos}">`;
-            const input = orderNumEl.querySelector('input') as HTMLInputElement;
-            input.focus();
-            input.select();
-
-            const applyPosition = () => {
-                const val = parseInt(input.value, 10);
-                if (!isNaN(val) && val > 0 && val !== currentPos) {
-                    callbacks.onMoveToPosition!(mod, val);
-                } else {
-                    orderNumEl.innerText = currentPos.toString();
-                }
-            };
-
-            input.onkeydown = (ke) => {
-                if (ke.key === 'Enter') {
-                    ke.preventDefault();
-                    applyPosition();
-                } else if (ke.key === 'Escape') {
-                    orderNumEl.innerText = currentPos.toString();
-                }
-            };
-
-            input.onblur = () => {
-                applyPosition();
-            };
-        };
-    }
-
-    // Bind Active action buttons
-    if (orderNumber !== null) {
-        const topBtn = div.querySelector('.btn-action-top') as HTMLButtonElement;
-        const bottomBtn = div.querySelector('.btn-action-bottom') as HTMLButtonElement;
-        const removeBtn = div.querySelector('.btn-action-remove') as HTMLButtonElement;
-
-        if (topBtn && callbacks?.onMoveToTop) {
-            topBtn.onclick = (e) => {
-                e.stopPropagation();
-                callbacks.onMoveToTop!(mod);
-            };
-        }
-
-        if (bottomBtn && callbacks?.onMoveToBottom) {
-            bottomBtn.onclick = (e) => {
-                e.stopPropagation();
-                callbacks.onMoveToBottom!(mod);
-            };
-        }
-
-        if (removeBtn && callbacks?.onDeactivate) {
-            removeBtn.onclick = (e) => {
-                e.stopPropagation();
-                callbacks.onDeactivate!(mod);
-            };
-        }
-    } else {
-        // Bind Inactive action buttons
-        const addBtn = div.querySelector('.btn-action-add') as HTMLButtonElement;
-        const addTopBtn = div.querySelector('.btn-action-add-top') as HTMLButtonElement;
-        const injectBtn = div.querySelector('.btn-action-inject') as HTMLButtonElement;
-
-        if (addBtn && callbacks?.onActivate) {
-            addBtn.onclick = (e) => {
-                e.stopPropagation();
-                callbacks.onActivate!(mod, 'bottom');
-            };
-        }
-
-        if (addTopBtn && callbacks?.onActivate) {
-            addTopBtn.onclick = (e) => {
-                e.stopPropagation();
-                callbacks.onActivate!(mod, 'top');
-            };
-        }
-
-        if (injectBtn && callbacks?.onActivate) {
-            injectBtn.onclick = async (e) => {
-                e.stopPropagation();
-                const inputVal = await showInputDialog({
-                    title: 'Inject Mod into Load Order',
-                    message: `Enter position # for "${mod.title || mod.name}" (1 to ${totalActive + 1}):`,
-                    defaultValue: 1,
-                    inputType: 'number',
-                    min: 1,
-                    max: totalActive + 1,
-                    confirmText: 'Inject at Position'
-                });
-
-                if (inputVal !== null) {
-                    const pos = parseInt(inputVal.trim(), 10);
-                    if (!isNaN(pos) && pos >= 1) {
-                        callbacks.onActivate!(mod, pos);
-                    }
-                }
-            };
-        }
-    }
 
     return div;
 }
 
-function escapeHtml(str: string): string {
-    const p = document.createElement('p');
-    p.textContent = str;
-    return p.innerHTML;
+/**
+ * In-place reconciliation updater for existing mod card DOM nodes.
+ * Avoids destroying & re-creating DOM nodes, keeping image decode cache and layout alive.
+ */
+export function updateModCardState(
+    cardEl: HTMLElement,
+    orderNumber: number | null,
+    totalActive: number
+): void {
+    const isOrderActive = orderNumber !== null;
+    const currentOrderText = isOrderActive ? orderNumber.toString() : '-';
+
+    const orderNumEl = cardEl.querySelector('.order-num') as HTMLElement | null;
+    if (orderNumEl && !orderNumEl.querySelector('input')) {
+        if (orderNumEl.innerText !== currentOrderText) {
+            orderNumEl.innerText = currentOrderText;
+        }
+        if (isOrderActive) {
+            orderNumEl.className = 'order-num order-active order-editable';
+            orderNumEl.title = 'Click to change order position';
+        } else {
+            orderNumEl.className = 'order-num';
+            orderNumEl.title = '';
+        }
+    }
+
+    // Update Action Buttons if mode switched or total changed
+    const actionsContainer = cardEl.querySelector('.mod-actions') as HTMLElement | null;
+    const isCurrentlyActiveCard = Boolean(cardEl.querySelector('.btn-action-top'));
+
+    if (isOrderActive !== isCurrentlyActiveCard || !actionsContainer) {
+        const newActionsHtml = buildActionsHtml(isOrderActive, totalActive);
+        if (actionsContainer) {
+            actionsContainer.outerHTML = newActionsHtml;
+        } else {
+            const rightSection = cardEl.querySelector('.mod-right-section');
+            if (rightSection) {
+                rightSection.insertAdjacentHTML('afterbegin', newActionsHtml);
+            }
+        }
+    } else if (isOrderActive && actionsContainer) {
+        // Update bottom button title if total active count shifted
+        const bottomBtn = actionsContainer.querySelector('.btn-action-bottom') as HTMLElement | null;
+        if (bottomBtn) {
+            bottomBtn.title = `Move to Bottom (Priority #${totalActive})`;
+        }
+    }
+}
+
+/**
+ * Fast conflict badge updater with dirty signature checking.
+ */
+export function updateModCardConflicts(
+    cardEl: HTMLElement,
+    summary: ModConflictSummary | null | undefined,
+    isMoviePack: boolean = false
+): void {
+    const newSig = buildConflictSignature(summary, isMoviePack);
+    if (cardEl.dataset.conflictSig === newSig) {
+        return; // No DOM change needed!
+    }
+    cardEl.dataset.conflictSig = newSig;
+
+    const metaEl = cardEl.querySelector('.mod-meta');
+    if (!metaEl) return;
+
+    let badgeGroup = metaEl.querySelector('.conflict-badge-group') as HTMLElement | null;
+    const badgesHtml = buildConflictBadgesHtml(summary, isMoviePack);
+
+    if (!badgesHtml) {
+        if (badgeGroup) badgeGroup.remove();
+        return;
+    }
+
+    if (!badgeGroup) {
+        badgeGroup = document.createElement('div');
+        badgeGroup.className = 'conflict-badge-group';
+        metaEl.appendChild(badgeGroup);
+    }
+    badgeGroup.innerHTML = badgesHtml;
 }

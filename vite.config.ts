@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   clearScreen: false,
+  publicDir: 'static',
   server: {
     port: 5173,
     strictPort: true,

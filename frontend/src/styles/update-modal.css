@@ -1,0 +1,283 @@
+/* ==============================================================================
+   Total War: WARHAMMER III Native Mod Manager - In-App Update Modal Styles
+   ============================================================================== */
+
+.update-modal-box {
+    max-width: 580px;
+    width: 90%;
+    background: var(--color-bg-surface);
+    border: 1px solid var(--color-border-medium);
+    border-radius: var(--radius-md);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    animation: modalPopIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalPopIn {
+    from {
+        opacity: 0;
+        transform: scale(0.96) translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.update-header-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.update-header-title h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin: 0;
+}
+
+.update-header-icon {
+    width: 22px;
+    height: 22px;
+    color: var(--color-primary);
+    stroke: currentColor;
+    flex-shrink: 0;
+}
+
+/* Version transition banner */
+.update-version-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--color-bg-surface-elevated);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+}
+
+.version-tag-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.version-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+    letter-spacing: 0.02em;
+}
+
+.tag-current {
+    background: rgba(148, 163, 184, 0.15);
+    color: #94a3b8;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.tag-new {
+    background: rgba(220, 38, 38, 0.2);
+    color: #f87171;
+    border: 1px solid rgba(220, 38, 38, 0.45);
+}
+
+.version-arrow {
+    color: var(--color-text-dim);
+    font-size: 0.9rem;
+}
+
+.release-date {
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+}
+
+/* Release notes box */
+.update-notes-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.update-notes-title {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.update-notes-content {
+    font-family: 'JetBrains Mono', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
+    font-size: 0.82rem;
+    line-height: 1.45;
+    color: var(--color-text-primary);
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    max-height: 180px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* Progress bar container */
+.update-progress-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: var(--color-bg-surface-elevated);
+    border: 1px solid var(--color-border-medium);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+}
+
+.progress-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.progress-status-text {
+    color: var(--color-text-primary);
+}
+
+.progress-percent-text {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--color-primary);
+}
+
+.progress-track {
+    width: 100%;
+    height: 8px;
+    background: var(--color-bg-input);
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid var(--color-border-subtle);
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-primary) 0%, #f87171 100%);
+    border-radius: 4px;
+    transition: width 0.15s ease-out;
+}
+
+.progress-size-row {
+    display: flex;
+    justify-content: flex-end;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.74rem;
+    color: var(--color-text-muted);
+}
+
+/* Titlebar Update Pill Badge */
+.titlebar-update-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 8px;
+    background: rgba(220, 38, 38, 0.2);
+    border: 1px solid rgba(220, 38, 38, 0.45);
+    border-radius: 12px;
+    color: #f87171;
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    user-select: none;
+    transition: all 0.15s ease;
+    animation: updatePulse 2s infinite;
+}
+
+.titlebar-update-badge:hover {
+    background: var(--color-primary);
+    color: #FFFFFF;
+    border-color: var(--color-primary);
+}
+
+.titlebar-update-badge .badge-pulse-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #f87171;
+}
+
+.titlebar-update-badge:hover .badge-pulse-dot {
+    background: #FFFFFF;
+}
+
+@keyframes updatePulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 4px rgba(220, 38, 38, 0);
+    }
+}
+
+.btn-glowing {
+    box-shadow: 0 0 12px rgba(220, 38, 38, 0.5);
+    animation: glowPulse 1.8s infinite alternate;
+}
+
+@keyframes glowPulse {
+    from {
+        box-shadow: 0 0 6px rgba(220, 38, 38, 0.3);
+    }
+    to {
+        box-shadow: 0 0 16px rgba(220, 38, 38, 0.8);
+    }
+}
+
+.spin {
+    animation: spinRotate 0.8s linear infinite;
+}
+
+@keyframes spinRotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Settings modal update controls */
+.version-display-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--color-text-muted);
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border-subtle);
+    padding: 1px 6px;
+    border-radius: var(--radius-sm);
+}
+
+.settings-update-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+}
+
+.checkbox-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    user-select: none;
+}
+
+.checkbox-label input[type="checkbox"] {
+    accent-color: var(--color-primary);
+    cursor: pointer;
+}

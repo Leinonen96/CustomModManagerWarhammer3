@@ -13,6 +13,7 @@ import { ModListManager } from './components/ModList';
 import { HeaderControls } from './components/HeaderControls';
 import { SearchController } from './components/SearchBar';
 import { InspectorDrawer } from './components/InspectorDrawer';
+import { updateController } from './controllers/UpdateController';
 import { Toast } from './components/Toast';
 
 class App {
@@ -36,6 +37,9 @@ class App {
         this.modListManager = new ModListManager('inactive-mods', 'active-mods');
         this.searchController = new SearchController('search-inactive', 'search-active');
         this.inspectorDrawer = new InspectorDrawer();
+
+        // Initialize background update check
+        updateController.init();
 
         try {
             const config = await fetchConfig();

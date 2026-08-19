@@ -53,7 +53,7 @@ export class ZoomController {
 
     private showIndicator(): void {
         const pct = Math.round(this.currentScale * 100);
-        this.indicatorEl.innerText = `🔍 ${pct}%`;
+        this.indicatorEl.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 4px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>${pct}%`;
         this.indicatorEl.classList.add('visible');
 
         clearTimeout(this.hideTimeout);

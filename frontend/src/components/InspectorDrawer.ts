@@ -43,7 +43,9 @@ export class InspectorDrawer {
                     <h3 class="drawer-title" id="drawer-mod-title">No Mod Selected</h3>
                     <span class="drawer-subtitle" id="drawer-mod-subtitle"></span>
                 </div>
-                <button type="button" id="drawer-close-btn" class="drawer-close-btn" title="Close Drawer (Escape)">✕</button>
+                <button type="button" id="drawer-close-btn" class="drawer-close-btn" title="Close Drawer (Escape)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
             </div>
 
             <div class="drawer-tabs">
@@ -56,13 +58,13 @@ export class InspectorDrawer {
 
             <div class="drawer-body" id="drawer-body">
                 <div class="drawer-empty-state">
-                    <p>Select any mod or click 🔍 to inspect its internal pack manifest, dependencies, and conflicts.</p>
+                    <p>Select any mod or click "Inspect" on a card to view its internal pack manifest, dependencies, and conflicts.</p>
                 </div>
             </div>
 
             <div class="drawer-footer">
                 <button type="button" id="drawer-btn-autosort" class="btn btn-secondary" title="Auto-sort active load order based on dependencies">
-                    ⚡ Auto-Sort Order
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> Auto-Sort Order
                 </button>
             </div>
         `;
@@ -447,7 +449,7 @@ export class InspectorDrawer {
             if (summary?.is_framework) {
                 prereqsHtml = `
                     <div class="dep-root-banner">
-                        <span class="dep-root-icon">📦</span>
+                        <span class="dep-root-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg></span>
                         <div class="dep-root-text">
                             <strong>Foundational Core Framework</strong>
                             <p>This mod acts as a root engine / parent framework and does not require other mods.</p>
@@ -468,7 +470,7 @@ export class InspectorDrawer {
                         const isMissing = missingDeps.includes(d);
                         return `
                             <div class="dependency-item ${isMissing ? 'dep-missing' : 'dep-satisfied'}">
-                                <span class="dep-status-icon">${isMissing ? '⚠️' : '✓'}</span>
+                                <span class="dep-status-icon">${isMissing ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>' : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>'}</span>
                                 <span class="dep-name">${escapeHtml(d)}</span>
                                 <span class="dep-status-label">${isMissing ? 'Missing from Active' : 'Satisfied'}</span>
                             </div>
@@ -490,7 +492,7 @@ export class InspectorDrawer {
                 <div class="dependency-list">
                     ${dependents.map(depName => `
                         <div class="dependency-item dep-satisfied">
-                            <span class="dep-status-icon">↳</span>
+                            <span class="dep-status-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg></span>
                             <span class="dep-name">${escapeHtml(depName)}</span>
                             <span class="dep-status-label font-mono">Dependent Mod</span>
                         </div>
@@ -514,7 +516,7 @@ export class InspectorDrawer {
                 <div class="drawer-section">
                     <h4 class="drawer-section-title">Steam Community</h4>
                     <button type="button" class="btn btn-secondary" id="drawer-btn-steam" style="width: 100%;">
-                        🌐 Open Steam Workshop Page ↗
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg> Open Steam Workshop Page <svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
                     </button>
                 </div>
             </div>
@@ -550,7 +552,7 @@ export class InspectorDrawer {
 
         try {
             this.autoSortBtn.disabled = true;
-            this.autoSortBtn.innerText = '⚡ Sorting...';
+            this.autoSortBtn.innerHTML = '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> Sorting...';
             const sorted = await autoSortDependencies(active);
             store.setActiveMods(sorted);
             Toast.success(`Auto-sorted ${sorted.length} active mods by dependency DAG!`);
@@ -558,7 +560,7 @@ export class InspectorDrawer {
             Toast.error(`Auto-sort failed: ${err.message || err}`);
         } finally {
             this.autoSortBtn.disabled = false;
-            this.autoSortBtn.innerText = '⚡ Auto-Sort Order';
+            this.autoSortBtn.innerHTML = '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> Auto-Sort Order';
         }
     }
 }

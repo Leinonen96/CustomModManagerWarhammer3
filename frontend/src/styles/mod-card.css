@@ -6,7 +6,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 5px 8px;
+    padding: 6px 10px;
     margin-bottom: 4px;
     background: var(--color-bg-card);
     border-radius: var(--radius-sm);
@@ -14,9 +14,14 @@
     border: 1px solid var(--color-border-subtle);
     contain: layout style paint;
     content-visibility: auto;
-    contain-intrinsic-size: auto 82px;
+    contain-intrinsic-size: auto 84px;
     transform: translateZ(0);
+    backface-visibility: hidden;
     transition: border-color 0.08s ease, background-color 0.08s ease;
+}
+
+.mod-item.mod-item-hidden {
+    display: none !important;
 }
 
 .mod-item:hover {
@@ -120,13 +125,7 @@
     flex-grow: 1;
     min-width: 0;
     justify-content: center;
-}
-
-.mod-name-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
+    overflow: hidden;
 }
 
 .mod-title {
@@ -138,10 +137,118 @@
     text-overflow: ellipsis;
     letter-spacing: -0.01em;
     line-height: 1.25;
+    display: block;
+    width: 100%;
+}
+
+.mod-filename {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.76rem;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 2px;
+    display: block;
+    width: 100%;
+}
+
+.mod-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.74rem;
+    color: var(--color-text-dim);
+    margin-top: 3px;
+    width: 100%;
+    min-width: 0;
+}
+
+/* Right Section containing Actions on top and Badges below */
+.mod-right-section {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 6px;
+    flex-shrink: 0;
+    align-self: stretch;
+    padding: 2px 0;
+}
+
+.mod-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.card-action-btn {
+    background: var(--color-bg-surface-elevated);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border-medium);
+    border-radius: var(--radius-sm);
+    height: 24px;
+    padding: 0 7px;
+    font-size: 0.73rem;
+    font-weight: 600;
+    cursor: pointer;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    transition: background-color 0.08s, color 0.08s, border-color 0.08s;
+    outline: none;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.card-action-btn .action-icon {
+    width: 11px;
+    height: 11px;
+    flex-shrink: 0;
+    stroke: currentColor;
+}
+
+.card-action-btn:hover {
+    background: var(--color-bg-card-hover);
+    color: var(--color-text-primary);
+    border-color: var(--color-border-focus);
+}
+
+.btn-action-add:hover {
+    background: var(--color-primary);
+    color: #000000;
+    border-color: var(--color-primary);
+}
+
+.btn-action-top:hover,
+.btn-action-add-top:hover {
+    background: var(--color-cyan);
+    color: #000000;
+    border-color: var(--color-cyan);
+}
+
+.btn-action-inject {
+    color: var(--color-cyan);
+    border-color: var(--color-cyan-subtle);
+}
+
+.btn-action-inject:hover {
+    background: var(--color-cyan-hover);
+    color: #FFFFFF;
+    border-color: var(--color-cyan-hover);
+}
+
+.btn-action-remove:hover {
+    background: var(--color-danger);
+    color: #FFFFFF;
+    border-color: var(--color-danger);
 }
 
 .mod-badge-cluster {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 5px;
     flex-shrink: 0;
@@ -180,25 +287,6 @@
     border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.mod-filename {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.76rem;
-    color: var(--color-text-muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-top: 2px;
-}
-
-.mod-meta {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.74rem;
-    color: var(--color-text-dim);
-    margin-top: 3px;
-}
-
 .meta-dot {
     font-size: 0.8rem;
     color: var(--color-text-dim);
@@ -209,6 +297,9 @@
     text-decoration: none;
     font-weight: 600;
     cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
 }
 
 .steam-link:hover {
@@ -216,70 +307,20 @@
     text-decoration: underline;
 }
 
-/* --- QUICK ACTION BUTTONS ON MOD CARDS --- */
-.mod-actions {
-    display: flex;
-    align-items: center;
-    gap: 3px;
-    opacity: 0;
-    transition: opacity 0.08s ease-in-out;
-    flex-shrink: 0;
+.badge-icon {
+    width: 10px;
+    height: 10px;
+    display: inline-block;
+    vertical-align: -1px;
+    margin-right: 2px;
+    stroke: currentColor;
 }
 
-.mod-item:hover .mod-actions {
-    opacity: 1;
-}
-
-.card-action-btn {
-    background: var(--color-bg-surface-elevated);
-    color: var(--color-text-secondary);
-    border: 1px solid var(--color-border-medium);
-    border-radius: var(--radius-sm);
-    height: 24px;
-    padding: 0 7px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    cursor: pointer;
-    line-height: 1;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.08s, color 0.08s, border-color 0.08s;
-    outline: none;
-}
-
-.card-action-btn:hover {
-    background: var(--color-bg-card-hover);
-    color: var(--color-text-primary);
-    border-color: var(--color-border-focus);
-}
-
-.btn-action-add:hover {
-    background: var(--color-primary);
-    color: #000000;
-    border-color: var(--color-primary);
-}
-
-.btn-action-top:hover,
-.btn-action-add-top:hover {
-    background: var(--color-cyan);
-    color: #000000;
-    border-color: var(--color-cyan);
-}
-
-.btn-action-inject {
-    color: var(--color-cyan);
-    border-color: var(--color-cyan-subtle);
-}
-
-.btn-action-inject:hover {
-    background: var(--color-cyan-hover);
-    color: #FFFFFF;
-    border-color: var(--color-cyan-hover);
-}
-
-.btn-action-remove:hover {
-    background: var(--color-danger);
-    color: #FFFFFF;
-    border-color: var(--color-danger);
+.meta-icon {
+    width: 10px;
+    height: 10px;
+    display: inline-block;
+    vertical-align: -1px;
+    margin-left: 2px;
+    stroke: currentColor;
 }

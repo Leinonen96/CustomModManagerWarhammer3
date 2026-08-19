@@ -34,7 +34,8 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["appimage", "deb", "nsis"],
+    "createUpdaterArtifacts": true,
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -42,5 +43,13 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDY4QkIwQzYzRkM4MDUyODgKUldTSVVvRDhZd3k3YUJva1NkTnl1UmNHM2NtRFV2bzU0b1U0Zk1aSzV5S3c5dGJvQ2cxVjJmSjYK",
+      "endpoints": [
+        "https://github.com/Leinonen96/CustomModManagerWarhammer3/releases/latest/download/latest.json"
+      ]
+    }
   }
 }

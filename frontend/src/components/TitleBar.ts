@@ -1,12 +1,13 @@
-/**
- * Custom Frameless Titlebar Component with Window Controls (Tauri v2).
- */
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { store } from '../state/store';
+import { updateController } from '../controllers/UpdateController';
+import { updateModal } from './UpdateModal';
 
 export class TitleBar {
     private element!: HTMLElement;
     private presetBadge!: HTMLElement;
+    private updateBadgeEl!: HTMLElement;
+    private updateTextEl!: HTMLElement;
     private maxBtn!: HTMLButtonElement;
     private appWindow = getCurrentWindow();
 
@@ -22,9 +23,13 @@ export class TitleBar {
 
         this.element.innerHTML = `
             <div class="titlebar-drag-region" data-tauri-drag-region>
-                <img src="/static/gemini-svg.svg" alt="WH3" class="titlebar-icon">
+                <img src="/gemini-svg.svg" alt="WH3" class="titlebar-icon">
                 <span class="titlebar-title">WARHAMMER III MOD MANAGER</span>
                 <span id="titlebar-preset-badge" class="titlebar-badge" style="display: none;"></span>
+                <span id="titlebar-update-badge" class="titlebar-update-badge" style="display: none;" title="New update available! Click to view release notes and install.">
+                    <span class="badge-pulse-dot"></span>
+                    <span id="titlebar-update-text">Update Available</span>
+                </span>
             </div>
             <div class="titlebar-controls">
                 <button type="button" class="titlebar-btn" id="titlebar-minimize" title="Minimize">
@@ -45,6 +50,8 @@ export class TitleBar {
         document.body.insertBefore(this.element, document.body.firstChild);
 
         this.presetBadge = this.element.querySelector('#titlebar-preset-badge') as HTMLElement;
+        this.updateBadgeEl = this.element.querySelector('#titlebar-update-badge') as HTMLElement;
+        this.updateTextEl = this.element.querySelector('#titlebar-update-text') as HTMLElement;
         this.maxBtn = this.element.querySelector('#titlebar-maximize') as HTMLButtonElement;
     }
 
@@ -56,9 +63,23 @@ export class TitleBar {
         this.maxBtn.onclick = () => this.appWindow.toggleMaximize();
         closeBtn.onclick = () => this.appWindow.close();
 
+        this.updateBadgeEl.onclick = () => {
+            updateModal.show();
+        };
+
         // Update preset badge when store changes
         store.subscribe('SELECTED_PRESET_CHANGED', () => {
             this.updatePresetBadge(store.getSelectedPreset());
+        });
+
+        // Listen for update events
+        updateController.subscribe((update) => {
+            if (update) {
+                this.updateBadgeEl.style.display = 'inline-flex';
+                this.updateTextEl.innerText = `Update v${update.version}`;
+            } else {
+                this.updateBadgeEl.style.display = 'none';
+            }
         });
     }
 
