@@ -4,9 +4,12 @@
 fn main() {
     #[cfg(target_os = "linux")]
     {
-        // Fix for WebKitGTK DMA-BUF Wayland crash (Error 71) on NVIDIA & modern Linux compositors
+        // Fix for WebKitGTK DMA-BUF & Compositing Wayland crash on NVIDIA & modern Linux compositors
         if std::env::var("WEBKIT_DISABLE_DMABUF_RENDERER").is_err() {
             std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+        }
+        if std::env::var("WEBKIT_DISABLE_COMPOSITING_MODE").is_err() {
+            std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
         }
     }
 

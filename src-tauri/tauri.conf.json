@@ -41,6 +41,7 @@
     "targets": [
       "appimage",
       "deb",
+      "rpm",
       "nsis"
     ],
     "createUpdaterArtifacts": true,

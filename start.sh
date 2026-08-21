@@ -8,6 +8,7 @@ echo "Initializing Total War: WARHAMMER III Native Mod Manager (Tauri v2)..."
 
 # Fix WebKitGTK Wayland DMA-BUF issue on NVIDIA/Linux compositors
 export WEBKIT_DISABLE_DMABUF_RENDERER=1
+export WEBKIT_DISABLE_COMPOSITING_MODE=1
 
 # Auto-Install / Auto-Update Desktop Shortcut if missing or directory moved
 SHORTCUT_PATH="$HOME/.local/share/applications/wh3-mod-manager.desktop"

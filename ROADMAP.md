@@ -1,91 +1,41 @@
-## The Modern Tauri v2 + Dynamic Sidecar Plan
+# Development Roadmap & Release Milestones
 
-**1.Scaffold with create-tauri-app:**Tauri v2.
+This document tracks completed milestones and planned features for the Total War: WARHAMMER III Mod Manager.
 
-Instead of manually initializing, use the modern bootstrap tool which configures Vite, TypeScript, and Tauri v2 all at once.
+---
 
-Run `npm create tauri-app@latest`.
+## Architecture & Version History
 
-Choose **TypeScript** and **Vite**. This creates a perfectly wired frontend + backend directory structure out of the box, saving you from manually moving `index.html` and configuring build paths.
+### Version 2.0.0 — Binary PFH Parsing & In-App Collision Matrix
+- [x] In-memory binary PFH packfile parser (PFH5, PFH4, PFH3, PFH2).
+- [x] File collision matrix classification (`FatalStartpos`, `ScriptOverride`, `UIOverride`, `DBCollision`, `HarmlessMerge`).
+- [x] Slide-over Inspector Drawer with file manifest tree, hash inspection, and collision diff view.
+- [x] SHA256 deterministic pack hashing and cached `mtime` invalidation.
 
-**2.Dynamic Port Allocation in Flask:**Robust Backend.
+### Version 2.1.0 — Auto-Updater & Linux Packaging
+- [x] Integrated Tauri v2 auto-updater with GitHub Releases endpoint.
+- [x] Cross-platform build packaging (`.deb`, `.AppImage`, NSIS `.exe`).
+- [x] In-app release notes modal with update progress indicator.
+- [x] XDG Base Directory config migration (`~/.config/wh3-mod-manager/`).
 
-Update your Flask `run.py` to ask the OS for a free port instead of forcing port 5000:
+### Version 2.2.0 — Dependency DAG & Mod Pinning Engine
+- [x] Topological DAG dependency sorting using Kahn's algorithm with ASCII priority queues.
+- [x] Mod Pinning: Lock foundational mods (Mixer, Community Bugfix Mod) to fixed slots.
+- [x] Persistent User Override Rules (`Mod A loads above/below Mod B`) saved from the conflict inspector.
+- [x] Triple-Check Micro-Patch & Character Replacer heuristics ($\le 25$ scale, $\ge 3\times$ disparity, $\ge 50\%$ or $\ge 4$ files overlap).
+- [x] Inline numeric order badge editing with keyboard navigation (<kbd>Enter</kbd> to apply, <kbd>Esc</kbd> to cancel).
+- [x] Custom context menu for rapid mod prioritization and file inspection.
 
-Python
+---
 
-```
-import socket
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock.bind(('127.0.0.1', 0))
-port = sock.getsockname()[1]
-sock.close()
+## Planned Future Milestones
 
-# Print the port so Tauri can capture it
-print(f"BACKEND_PORT={port}", flush=True)
-app.run(host='127.0.0.1', port=port, debug=False)
-```
+### Version 2.3.0 — Mod Profiles & Advanced Export
+- [ ] Shareable mod preset export and import (compressed JSON / URL sharing string).
+- [ ] Missing mod detection on preset import with direct Steam Workshop subscription links.
+- [ ] Mod categorization tags (Overhaul, Graphics, UI, Balance, Faction-Specific).
 
-**3.Intercept and Pass the Port:**The Rust Bridge.
-
-In `src-tauri/src/main.rs`, use Tauri's `Command` API to spawn the Flask sidecar.
-
-Write a Rust function that listens to the sidecar's stdout, captures `BACKEND_PORT=xxxxx`, and exposes a Tauri command (e.g., `get_backend_port`) so the TypeScript frontend can ask Rust what port Flask is running on.
-
-**4.Dynamic API Abstraction:**Frontend Independence.
-
-In `frontend/api.ts`, instead of hardcoding `fetch('http://localhost:5000/...')`, fetch the port from Rust on startup:
-
-TypeScript
-
-```
-import { invoke } from '@tauri-apps/api/core';
-
-let baseUrl = '';
-
-export async function initApi() {
-    const port = await invoke('get_backend_port');
-    baseUrl = `http://127.0.0.1:${port}`;
-}
-
-export async function fetchMods() {
-    const res = await fetch(`${baseUrl}/api/mods`);
-    return res.json();
-}
-```
-
-**5.Freeze and Package (Wayland/Flatpak):**Linux First.
-
-1. **Freeze:** Run `pyinstaller --noconsole --onefile run.py`. The `--noconsole` flag is critical—it ensures Python runs purely in the background without tripping up Wayland or XWayland window managers.
-    
-2. **Package:** Tauri v2 automatically generates an `.AppImage`. For a true modern Linux experience, you can add `flatpak` to Tauri's bundler targets in `tauri.conf.json`, which isolates your app cleanly from the host system.
-
-
-.
-├── backend/                  # [PYTHON] The raw Flask source code
-│   ├── core.py
-│   ├── routes.py
-│   └── __init__.py
-├── run.py                    # [PYTHON] Entry point (updated for dynamic ports)
-├── requirements.txt          
-│
-├── src-tauri/                # [RUST] The Tauri native desktop shell
-│   ├── binaries/             # └─ Compiled Python executables go here
-│   │   └── wh3-backend-x86_64-unknown-linux-gnu  # (PyInstaller output)
-│   ├── src/                  
-│   │   └── main.rs           # └─ Rust logic: Spawns sidecar & passes port to UI
-│   ├── tauri.conf.json       # └─ Tauri config: window size, sidecar declarations
-│   ├── Cargo.toml            # └─ Rust dependencies
-│   └── build.rs              
-│
-├── frontend/                 # [TYPESCRIPT] Modular UI source code
-│   ├── components/           # └─ UI modules (modManager.ts, presets.ts)
-│   ├── api.ts                # └─ Dynamic API layer (talks to Rust & Python)
-│   ├── state.ts              # └─ Application state 
-│   ├── main.ts               # └─ Main Vite entry point
-│   └── style.css             
-│
-├── index.html                # [VITE] Entry point (moved out of Flask templates/)
-├── package.json              # Node scripts (npm run dev, npm run tauri build)
-├── vite.config.ts            # Vite build pipeline configuration
-└── tsconfig.json             # TypeScript rules
+### Version 2.4.0 — Performance & Diagnostic Telemetry
+- [ ] Schema table row count comparison for conflicting DB tables.
+- [ ] Pack health audit tool (detect empty packs, invalid compression flags, missing localization strings).
+- [ ] Batch preset comparison diff tool.

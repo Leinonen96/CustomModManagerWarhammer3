@@ -60,7 +60,8 @@ jobs:
             libayatana-appindicator3-dev \
             librsvg2-dev \
             javascriptcoregtk-4.1 \
-            libfuse2
+            libfuse2 \
+            rpm
 
       - name: Install NPM dependencies
         run: npm ci

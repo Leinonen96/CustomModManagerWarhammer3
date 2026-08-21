@@ -5,32 +5,47 @@
 [![Rust](https://img.shields.io/badge/Rust-1.75%2B-orange?logo=rust)](https://www.rust-lang.org/)
 [![Tauri v2](https://img.shields.io/badge/Tauri-v2-blue?logo=tauri)](https://v2.tauri.app/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue?logo=typescript)](https://www.typescriptlang.org/)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-A high-performance desktop mod manager and diagnostic utility for **Total War: WARHAMMER III**, built with **Rust**, **Tauri v2**, and **TypeScript**.
+A desktop mod manager and diagnostic tool for **Total War: WARHAMMER III**, built with **Rust**, **Tauri v2**, and **TypeScript**.
 
-Engineered for large mod collections (100–500+ mods), providing real-time binary PFH pack inspection, topological DAG load order sorting, collision diffing, and native Linux/SteamOS and Windows support.
+Supports load orders ranging from single mods to hundreds of active mods, providing binary PFH pack inspection, topological DAG load order sorting, collision analysis, and native Linux/SteamOS and Windows support.
+
+Most existing Total War mod managers are Windows-centric applications requiring translation layers (such as Wine or Proton) to run on Linux. This project was developed with a native Rust and Tauri v2 architecture to provide first-class Linux and Steam Deck execution alongside Windows without runtime emulation overhead.
+
+![Total War: WARHAMMER III Mod Manager Interface](GUI.png)
+
+---
+
+## Installation
+
+Pre-built binaries and installers are available on the [Releases](https://github.com/Leinonen96/CustomModManagerWarhammer3/releases/latest) page.
+
+| Platform | Download Asset | Installation / Usage |
+| :--- | :--- | :--- |
+| **Linux (SteamOS / Any Distro)** | `WH3.Mod.Manager_*_amd64.AppImage` | `chmod +x WH3.Mod.Manager_*.AppImage`<br>`./WH3.Mod.Manager_*.AppImage` |
+| **Linux (Fedora / RHEL / openSUSE)** | `WH3.Mod.Manager_*_x86_64.rpm` | `sudo dnf install ./WH3.Mod.Manager_*.rpm` |
+| **Linux (Debian / Ubuntu)** | `WH3.Mod.Manager_*_amd64.deb` | `sudo dpkg -i WH3.Mod.Manager_*.deb` |
+| **Windows 10 / 11** | `WH3.Mod.Manager_*_x64-setup.exe` | Run the installer executable |
 
 ---
 
 ## Technical Overview
 
 ### Binary PFH Pack Parser & Collision Engine
-- **In-Memory Binary Parser**: Reads Total War PFH5, PFH4, and PFH3 file headers, index tables, and compression bitmasks using buffered binary streams with in-memory `mtime` cache invalidation.
-- **Collision Matrix Analysis**: Classifies cross-pack asset collisions into distinct risk tiers:
-  - `FatalStartpos`: Detects `startpos.esf` collisions across multiple active campaign overhauls.
-  - `ScriptOverride` / `UIOverride`: Identifies winning and overridden `.lua` scripts and `.twui.xml` layouts based on exact `user.script.txt` execution hierarchy.
-  - `DBCollision` & `HarmlessMerge`: Differentiates conflicting schema keys from safe additive table extensions.
-  - `MoviePack`: Flags packs that bypass `user.script.txt` and load directly via engine mechanics.
+- **In-Memory Binary Parser**: Reads Total War PFH5, PFH4, PFH3, and PFH2 file headers, index tables, and compression bitmasks using buffered binary streams with in-memory `mtime` cache invalidation.
+- **Collision Matrix Analysis**: Classifies cross-pack asset collisions into risk tiers:
+  - `FatalStartpos`: Detects conflicting `startpos.esf` instances across active campaign overhauls.
+  - `ScriptOverride` / `UIOverride`: Identifies winning and overridden `.lua` scripts and `.twui.xml` layouts based on `user.script.txt` execution hierarchy.
+  - `DBCollision` & `HarmlessMerge`: Differentiates conflicting database table filenames from additive schema extensions.
+  - `MoviePack`: Identifies packs that load directly from game data via engine mechanics rather than `user.script.txt`.
+
+![Conflict Inspector and Collision Analysis](demo.gif)
 
 ### Topological DAG Dependency Engine
 - **Kahn's Algorithm Sorting**: Implements directed acyclic graph (DAG) topological sorting with case-insensitive ASCII priority queues.
-- **Mod Pinning Anchors**: Allows users to freeze specific framework mods (e.g. Mixer, Community Bugfix Mod) to exact 1-indexed slots while remaining mods dynamically sort around them.
+- **Mod Pinning Anchors**: Allows users to fix specific foundational mods (e.g., Mixer, Community Bugfix Mod) to exact slots while unpinned mods sort around them.
 - **Persistent User Override Rules**: Permanent relative ordering rules (`Mod A loads above/below Mod B`) saved from the conflict inspector and prioritized during automatic sorting.
-- **Triple-Check Submod Heuristics**: Evaluates file scale, disparity ratios ($\ge 3\times$), and containment percentages ($\ge 50\%$) to automatically prioritize character replacers and micro-patches above parent overhauls.
-
-### Direct Game Launching
-- **Engine Bypass Execution**: Launches the game directly via Steam Proton / native arguments using the last deployed configuration, bypassing external launcher overhead.
+- **Triple-Check Submod Heuristics**: Evaluates file scale ($\le 25$), parent scale ($\ge 30$), scale disparity ($\ge 3\times$), and file overlap ($\ge 50\%$ or $\ge 4$ files) to automatically order micro-patches and character replacers above parent overhauls.
 
 ---
 
@@ -41,17 +56,20 @@ Engineered for large mod collections (100–500+ mods), providing real-time bina
 │                          TAURI v2 APPLICATION                              │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  FRONTEND (TypeScript / Vanilla CSS)                                        │
-│  • ModList: Keyed DOM node reconciliation with 120 FPS drag-and-drop        │
+│  • ModList: DOM node reconciliation with drag-and-drop (SortableJS)          │
 │  • InspectorDrawer: Packfile breakdown & visual collision diff viewer       │
-│  • SettingsModal: Native path detection & custom rule management            │
+│  • SettingsModal: Installation path detection & user rule management        │
+│  • HeaderControls: Presets, auto-sorting, and load order deployment         │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  IPC BRIDGE (@tauri-apps/api)                                               │
+│  IPC BRIDGE (@tauri-apps/api/core)                                          │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  BACKEND (Rust)                                                             │
-│  • pack_parser: Fast binary PFH pack indexer & collision detector          │
+│  • pack_parser: Binary PFH pack indexer & collision detector                │
 │  • dependency_engine: Topological DAG solver & rule injector                │
-│  • load_order_service: Atomic user.script.txt generation & symlink manager  │
-│  • game_launcher: Direct Warhammer3.exe Steam Proton execution             │
+│  • game_integrator: user.script.txt generation & symlink manager            │
+│  • config_store: Settings persistence & user override rule storage          │
+│  • workshop_scanner: Steam Workshop directory scanner & metadata extraction │
+│  • preset_repository: Preset storage and retrieval                          │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -59,13 +77,27 @@ For detailed specifications, see:
 - [Load Order Engine & Decision Logic](docs/LOAD_ORDER_ENGINE.md)
 - [System Architecture](docs/system-architecture.md)
 - [Design System](docs/DESIGN_SYSTEM.md)
+- [Product Vision & Principles](docs/vision.md)
 
 ---
 
-## Installation & Requirements
+## Keybindings
 
-### System Requirements
-- **Linux** (Debian, Ubuntu, Fedora, Arch Linux, SteamOS / Steam Deck) or **Windows 10/11**
+| Keybinding | Action |
+| :--- | :--- |
+| <kbd>Ctrl</kbd> + <kbd>+</kbd> / <kbd>=</kbd> | Zoom workspace in (+5%) |
+| <kbd>Ctrl</kbd> + <kbd>-</kbd> | Zoom workspace out (-5%) |
+| <kbd>Ctrl</kbd> + <kbd>0</kbd> | Reset workspace zoom (100%) |
+| <kbd>Ctrl</kbd> + Mouse Wheel | Adjust workspace zoom (±4%) |
+| <kbd>Esc</kbd> | Close inspector drawer, context menu, or active modal |
+| Click `#` order badge | Inline numeric position editing |
+
+---
+
+## Building from Source
+
+### Prerequisites
+- **Linux** (Debian, Ubuntu, Fedora, Arch Linux, SteamOS) or **Windows 10/11**
 - Total War: WARHAMMER III installed via Steam
 - [Rust toolchain](https://rustup.rs/) (1.75+)
 - [Node.js](https://nodejs.org/) (20.x+)
@@ -92,49 +124,26 @@ sudo pacman -S --needed \
   webkit2gtk-4.1 base-devel openssl gtk3 libappindicator-gtk3 librsvg
 ```
 
----
-
-## Building and Running
-
-### Development Mode
+### Development & Testing
 ```bash
+# Install dependencies
 npm install
+
+# Run in development mode
 npm run tauri:dev
-```
 
-### Verification & Testing
-```bash
-# Typecheck TypeScript
+# Run TypeScript typecheck
 npm run typecheck
-
-# Build frontend production bundle
-npm run build
 
 # Run Rust unit tests
 cargo test --manifest-path src-tauri/Cargo.toml
-```
 
-### Release Build
-```bash
+# Build release bundle
 npm run tauri:build
 ```
-Production binaries and packages are generated in `src-tauri/target/release/bundle/`.
-
----
-
-## Keybindings
-
-| Keybinding | Action |
-| :--- | :--- |
-| <kbd>Ctrl</kbd> + <kbd>+</kbd> / <kbd>=</kbd> | Zoom UI in (+10%) |
-| <kbd>Ctrl</kbd> + <kbd>-</kbd> | Zoom UI out (-10%) |
-| <kbd>Ctrl</kbd> + <kbd>0</kbd> | Reset UI zoom (100%) |
-| <kbd>Ctrl</kbd> + Mouse Wheel | Workspace zoom |
-| <kbd>Esc</kbd> | Close inspector drawer or active modal |
-| Click `#` order badge | Inline numeric position editing |
 
 ---
 
 ## License
 
-Distributed under the **MIT License**. See `LICENSE` for details.
+This project is currently under private development. All rights reserved. Redistribution, modification, or commercial use without express permission is prohibited.
