@@ -5,6 +5,7 @@
 [![Rust](https://img.shields.io/badge/Rust-1.75%2B-orange?logo=rust)](https://www.rust-lang.org/)
 [![Tauri v2](https://img.shields.io/badge/Tauri-v2-blue?logo=tauri)](https://v2.tauri.app/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 A desktop mod manager and diagnostic tool for **Total War: WARHAMMER III**, built with **Rust**, **Tauri v2**, and **TypeScript**.
 
@@ -146,4 +147,4 @@ npm run tauri:build
 
 ## License
 
-This project is currently under private development. All rights reserved. Redistribution, modification, or commercial use without express permission is prohibited.
+This project is licensed under the [MIT License](LICENSE).
