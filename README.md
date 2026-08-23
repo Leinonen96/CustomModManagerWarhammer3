@@ -1,7 +1,7 @@
 # Total War: WARHAMMER III Mod Manager
 
 [![CI](https://github.com/Leinonen96/CustomModManagerWarhammer3/actions/workflows/ci.yml/badge.svg)](https://github.com/Leinonen96/CustomModManagerWarhammer3/actions/workflows/ci.yml)
-[![Release](https://github.com/Leinonen96/CustomModManagerWarhammer3/actions/workflows/release.yml/badge.svg)](https://github.com/Leinonen96/CustomModManagerWarhammer3/actions/workflows/release.yml)
+[![Latest Release](https://img.shields.io/github/v/release/Leinonen96/CustomModManagerWarhammer3?logo=github&label=Release&color=34d399)](https://github.com/Leinonen96/CustomModManagerWarhammer3/releases/latest)
 [![Rust](https://img.shields.io/badge/Rust-1.75%2B-orange?logo=rust)](https://www.rust-lang.org/)
 [![Tauri v2](https://img.shields.io/badge/Tauri-v2-blue?logo=tauri)](https://v2.tauri.app/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue?logo=typescript)](https://www.typescriptlang.org/)
