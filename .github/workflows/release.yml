@@ -102,37 +102,23 @@ jobs:
           BODY="### What's New in $CURRENT_TAG:"
 
           if [ -n "$FEAT_LOG" ]; then
-            BODY="${BODY}
-
-Features & Enhancements:
-$FEAT_LOG"
+            BODY=$(printf "%s\n\nFeatures & Enhancements:\n%s" "$BODY" "$FEAT_LOG")
           fi
 
           if [ -n "$FIX_LOG" ]; then
-            BODY="${BODY}
-
-Bug Fixes & Stability:
-$FIX_LOG"
+            BODY=$(printf "%s\n\nBug Fixes & Stability:\n%s" "$BODY" "$FIX_LOG")
           fi
 
           if [ -n "$PERF_LOG" ]; then
-            BODY="${BODY}
-
-Performance & Refactoring:
-$PERF_LOG"
+            BODY=$(printf "%s\n\nPerformance & Refactoring:\n%s" "$BODY" "$PERF_LOG")
           fi
 
           if [ -n "$OTHER_LOG" ]; then
-            BODY="${BODY}
-
-Documentation & Updates:
-$OTHER_LOG"
+            BODY=$(printf "%s\n\nDocumentation & Updates:\n%s" "$BODY" "$OTHER_LOG")
           fi
 
           if [ -z "$FEAT_LOG" ] && [ -z "$FIX_LOG" ] && [ -z "$PERF_LOG" ] && [ -z "$OTHER_LOG" ]; then
-            BODY="${BODY}
-
-• Maintenance release, stability enhancements, and bug fixes."
+            BODY=$(printf "%s\n\n• Maintenance release, stability enhancements, and bug fixes." "$BODY")
           fi
 
           echo "RELEASE_BODY<<EOF" >> $GITHUB_ENV
