@@ -577,7 +577,10 @@ export class InspectorDrawer {
         const steamBtn = this.bodyEl.querySelector('#drawer-btn-steam') as HTMLButtonElement;
         if (steamBtn) {
             steamBtn.onclick = () => {
-                tauriInvoke('open_url', { url: steamUrl });
+                tauriInvoke('open_url', { url: steamUrl }).catch(err => {
+                    console.error('Failed to open Steam URL:', err);
+                    Toast.error(`Could not open browser: ${err.message || err}`);
+                });
             };
         }
     }

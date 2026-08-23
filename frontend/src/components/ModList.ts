@@ -123,8 +123,15 @@ export class ModListManager {
             if (action === 'steam') {
                 e.preventDefault();
                 e.stopPropagation();
-                const steamUrl = cardEl.dataset.steamUrl || mod.url || `https://steamcommunity.com/sharedfiles/filedetails/?id=${mod.id}`;
-                tauriInvoke('open_url', { url: steamUrl });
+                const steamUrl = cardEl.dataset.steamUrl || mod.url || (mod.id && mod.id !== 'Local' ? `https://steamcommunity.com/sharedfiles/filedetails/?id=${mod.id}` : '');
+                if (steamUrl) {
+                    tauriInvoke('open_url', { url: steamUrl }).catch(err => {
+                        console.error('Failed to open Steam URL:', err);
+                        Toast.error(`Could not open browser: ${err.message || err}`);
+                    });
+                } else {
+                    Toast.info('Local mods do not have a Steam Workshop page.');
+                }
             } else if (action === 'inspect') {
                 e.stopPropagation();
                 store.setInspectedMod(mod);

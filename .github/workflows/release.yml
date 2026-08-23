@@ -78,21 +78,65 @@ jobs:
           echo "Previous Tag: $PREV_TAG"
 
           if [ -n "$PREV_TAG" ]; then
-            CHANGES=$(git log "${PREV_TAG}..HEAD" --pretty=format:"• %s" --no-merges || true)
+            RAW_LOG=$(git log "${PREV_TAG}..HEAD" --pretty=format:"%s" --no-merges 2>/dev/null || true)
           fi
 
-          if [ -z "$CHANGES" ]; then
-            CHANGES=$(git log -n 12 --pretty=format:"• %s" --no-merges || true)
+          if [ -z "$RAW_LOG" ]; then
+            RAW_LOG=$(git log -n 15 --pretty=format:"%s" --no-merges 2>/dev/null || true)
           fi
 
-          if [ -z "$CHANGES" ]; then
-            CHANGES="• Maintenance release, bug fixes, and stability improvements."
+          # Filter out version bump noise
+          FILTERED_LOG=$(echo "$RAW_LOG" | grep -v -E "^chore\(release\):" | grep -v -E "^chore: update Cargo.lock" || true)
+
+          # Fallback if range only contained bumps
+          if [ -z "$FILTERED_LOG" ]; then
+            FILTERED_LOG=$(git log -n 10 --pretty=format:"%s" --no-merges 2>/dev/null | grep -v -E "^chore\(release\):" || true)
+          fi
+
+          # Parse by conventional commit categories
+          FEAT_LOG=$(echo "$FILTERED_LOG" | grep -E "^feat(\(.*\))?:" | sed "s/^/• /" || true)
+          FIX_LOG=$(echo "$FILTERED_LOG" | grep -E "^fix(\(.*\))?:" | sed "s/^/• /" || true)
+          PERF_LOG=$(echo "$FILTERED_LOG" | grep -E "^(perf|refactor)(\(.*\))?:" | sed "s/^/• /" || true)
+          OTHER_LOG=$(echo "$FILTERED_LOG" | grep -v -E "^(feat|fix|perf|refactor|chore)(\(.*\))?:" | sed "s/^/• /" || true)
+
+          BODY="### What's New in $CURRENT_TAG:"
+
+          if [ -n "$FEAT_LOG" ]; then
+            BODY="${BODY}
+
+Features & Enhancements:
+$FEAT_LOG"
+          fi
+
+          if [ -n "$FIX_LOG" ]; then
+            BODY="${BODY}
+
+Bug Fixes & Stability:
+$FIX_LOG"
+          fi
+
+          if [ -n "$PERF_LOG" ]; then
+            BODY="${BODY}
+
+Performance & Refactoring:
+$PERF_LOG"
+          fi
+
+          if [ -n "$OTHER_LOG" ]; then
+            BODY="${BODY}
+
+Documentation & Updates:
+$OTHER_LOG"
+          fi
+
+          if [ -z "$FEAT_LOG" ] && [ -z "$FIX_LOG" ] && [ -z "$PERF_LOG" ] && [ -z "$OTHER_LOG" ]; then
+            BODY="${BODY}
+
+• Maintenance release, stability enhancements, and bug fixes."
           fi
 
           echo "RELEASE_BODY<<EOF" >> $GITHUB_ENV
-          echo "### What's New in $CURRENT_TAG:" >> $GITHUB_ENV
-          echo "" >> $GITHUB_ENV
-          echo "$CHANGES" >> $GITHUB_ENV
+          echo "$BODY" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
       - name: Prepare signing key

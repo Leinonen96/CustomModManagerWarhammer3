@@ -218,8 +218,14 @@ export class ContextMenu {
                 } else if (action === 'inject') {
                     this.promptInject(mod);
                 } else if (action === 'steam') {
-                    const steamUrl = mod.url || (mod.id ? `https://steamcommunity.com/sharedfiles/filedetails/?id=${mod.id}` : '');
-                    if (steamUrl) tauriInvoke('open_url', { url: steamUrl });
+                    const steamUrl = mod.url || (mod.id && mod.id !== 'Local' && !isNaN(Number(mod.id)) ? `https://steamcommunity.com/sharedfiles/filedetails/?id=${mod.id}` : '');
+                    if (steamUrl) {
+                        tauriInvoke('open_url', { url: steamUrl }).catch(err => {
+                            Toast.error(`Could not open browser: ${err.message || err}`);
+                        });
+                    } else {
+                        Toast.info('Local mods do not have a Steam Workshop page.');
+                    }
                 } else if (action === 'open-folder') {
                     if (mod.real_path) {
                         tauriInvoke('open_path', { path: mod.real_path });

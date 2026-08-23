@@ -139,7 +139,9 @@ export function createModCard(
         ? (mod.file_size_bytes / (1024 * 1024)).toFixed(1) + ' MB'
         : '';
 
-    const isWorkshop = (mod.source_type || 'Workshop').toLowerCase() === 'workshop' || Boolean(mod.id && mod.id.length > 5);
+    const isWorkshop = (mod.source_type || 'Workshop').toLowerCase() === 'workshop' || Boolean(mod.id && mod.id.length > 5 && !isNaN(Number(mod.id)));
+    const steamUrl = mod.url || (isWorkshop && mod.id ? `https://steamcommunity.com/sharedfiles/filedetails/?id=${mod.id}` : '');
+    div.dataset.steamUrl = steamUrl;
 
     // Fast image conversion via Tauri protocol
     let finalThumbSrc = '/gemini-svg.svg';
@@ -173,8 +175,6 @@ export function createModCard(
     const conflictBadgesHtml = buildConflictBadgesHtml(summary, Boolean(mod.is_movie_pack), isPinned, pinnedPos);
 
     const actionsHtml = buildActionsHtml(isOrderActive, totalActive, isPinned, orderNumber);
-    const steamUrl = mod.url || `https://steamcommunity.com/sharedfiles/filedetails/?id=${mod.id}`;
-    div.dataset.steamUrl = steamUrl;
 
     div.innerHTML = `
         <div class="${orderClass}" data-action="edit-order" title="${isOrderActive ? (isPinned ? `Pinned at #${pinnedPos || orderNumber} (Click to change)` : 'Click to change order position') : ''}">${orderText}</div>
@@ -186,8 +186,10 @@ export function createModCard(
             <span class="mod-filename" title="${escapeHtml(mod.name)}">${escapeHtml(mod.name)}</span>
             <div class="mod-meta">
                 <span class="mod-id">ID: ${escapeHtml(mod.id || 'Local')}</span>
-                <span class="meta-dot">&bull;</span>
-                <a href="${steamUrl}" class="steam-link" data-action="steam" title="Open Steam Workshop page">View on Steam ${ICONS.external}</a>
+                ${steamUrl ? `
+                    <span class="meta-dot">&bull;</span>
+                    <a href="${steamUrl}" class="steam-link" data-action="steam" title="Open Steam Workshop page">View on Steam ${ICONS.external}</a>
+                ` : ''}
                 <span class="meta-dot">&bull;</span>
                 <span class="mod-meta-subtle">${isWorkshop ? 'WS' : 'LOCAL'}</span>
                 ${sizeMb ? `<span class="meta-dot">&bull;</span><span class="mod-meta-subtle">${sizeMb}</span>` : ''}

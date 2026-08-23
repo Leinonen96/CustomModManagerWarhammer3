@@ -42,6 +42,25 @@ git add package.json package-lock.json src-tauri/Cargo.toml src-tauri/Cargo.lock
 git commit -m "chore(release): bump version to v$NEW_VER"
 git tag "v$NEW_VER"
 
+# Push confirmation prompt (requires explicit user confirmation unless --yes is passed)
+AUTO_CONFIRM=false
+if [[ "$2" == "--yes" || "$2" == "-y" ]]; then
+    AUTO_CONFIRM=true
+fi
+
+if [ "$AUTO_CONFIRM" = false ]; then
+    echo ""
+    read -p "🚀 Push release v$NEW_VER and tags to GitHub Actions? [y/N]: " CONFIRM_PUSH
+    if [[ ! "$CONFIRM_PUSH" =~ ^[Yy]$ ]]; then
+        echo ""
+        echo "⏹️ Release commit and tag v$NEW_VER created locally. Push cancelled."
+        echo "To push manually when ready, run:"
+        echo "    git push origin main --tags"
+        echo ""
+        exit 0
+    fi
+fi
+
 # Push to GitHub
 echo "🚀 Pushing release v$NEW_VER and tags to GitHub..."
 git push origin main --tags
