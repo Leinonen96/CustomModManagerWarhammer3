@@ -19,14 +19,20 @@ Most existing Total War mod managers are Windows-centric applications requiring 
 
 ## Installation
 
-Pre-built binaries and installers are available on the [Releases](https://github.com/Leinonen96/CustomModManagerWarhammer3/releases/latest) page.
+Download the installer or package for your operating system from the [Releases](https://github.com/Leinonen96/CustomModManagerWarhammer3/releases/latest) page.
 
-| Platform | Download Asset | Installation / Usage |
+| Operating System | Download Asset | How to Install |
 | :--- | :--- | :--- |
-| **Linux (SteamOS / Any Distro)** | `WH3.Mod.Manager_*_amd64.AppImage` | `chmod +x WH3.Mod.Manager_*.AppImage`<br>`./WH3.Mod.Manager_*.AppImage` |
-| **Linux (Fedora / RHEL / openSUSE)** | `WH3.Mod.Manager_*_x86_64.rpm` | `sudo dnf install ./WH3.Mod.Manager_*.rpm` |
-| **Linux (Debian / Ubuntu)** | `WH3.Mod.Manager_*_amd64.deb` | `sudo dpkg -i WH3.Mod.Manager_*.deb` |
-| **Windows 10 / 11** | `WH3.Mod.Manager_*_x64-setup.exe` | Run the installer executable |
+| **Windows 10 / 11** | `WH3.Mod.Manager_*_x64-setup.exe` | Run the setup installer executable |
+| **Fedora / RHEL / openSUSE** | `WH3.Mod.Manager_*_x86_64.rpm` *(Recommended)* | `sudo dnf install ./WH3.Mod.Manager_*.rpm` |
+| **Ubuntu / Debian / Mint / Pop!_OS** | `WH3.Mod.Manager_*_amd64.deb` *(Recommended)* | `sudo dpkg -i ./WH3.Mod.Manager_*.deb` |
+| **Steam Deck (SteamOS) / Portable** | `WH3.Mod.Manager_*_amd64.AppImage` | `chmod +x WH3.Mod.Manager_*.AppImage`<br>`./WH3.Mod.Manager_*.AppImage` |
+
+> [!TIP]
+> **Linux Recommendations**:
+> - **Desktop Linux**: Installing the native **`.rpm`** or **`.deb`** package is recommended for seamless GPU acceleration, desktop icon integration, and automatic system library compatibility.
+> - **Steam Deck**: The standalone **`.AppImage`** is ideal for SteamOS's read-only partition.
+> - **NVIDIA Driver Note**: If running the `.AppImage` on an NVIDIA desktop with Wayland, launch with `WEBKIT_DISABLE_DMABUF_RENDERER=1 ./WH3.Mod.Manager_*.AppImage` for maximum stability.
 
 ---
 
@@ -141,6 +147,15 @@ cargo test --manifest-path src-tauri/Cargo.toml
 
 # Build release bundle
 npm run tauri:build
+```
+
+### Development Launcher Script (`./start.sh`)
+For local developer convenience on Linux, `./start.sh` automatically manages environment variables (including NVIDIA Wayland compatibility flags), updates desktop shortcuts, and launches the app:
+
+```bash
+./start.sh         # Build and launch standalone release
+./start.sh --dev   # Launch Vite dev server + Tauri debug binary
+./start.sh --build # Force clean rebuild of frontend and backend
 ```
 
 ---
