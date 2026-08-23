@@ -30,6 +30,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -66,6 +68,33 @@ jobs:
       - name: Install NPM dependencies
         run: npm ci
 
+      - name: Generate Dynamic Changelog
+        id: changelog
+        shell: bash
+        run: |
+          CURRENT_TAG="${{ github.ref_name }}"
+          PREV_TAG=$(git tag --sort=-creatordate | grep -v "^${CURRENT_TAG}$" | head -n 1 || true)
+          echo "Current Tag: $CURRENT_TAG"
+          echo "Previous Tag: $PREV_TAG"
+
+          if [ -n "$PREV_TAG" ]; then
+            CHANGES=$(git log "${PREV_TAG}..HEAD" --pretty=format:"• %s" --no-merges || true)
+          fi
+
+          if [ -z "$CHANGES" ]; then
+            CHANGES=$(git log -n 12 --pretty=format:"• %s" --no-merges || true)
+          fi
+
+          if [ -z "$CHANGES" ]; then
+            CHANGES="• Maintenance release, bug fixes, and stability improvements."
+          fi
+
+          echo "RELEASE_BODY<<EOF" >> $GITHUB_ENV
+          echo "### What's New in $CURRENT_TAG:" >> $GITHUB_ENV
+          echo "" >> $GITHUB_ENV
+          echo "$CHANGES" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
       - name: Prepare signing key
         shell: bash
         run: |
@@ -85,7 +114,7 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'WH3 Mod Manager ${{ github.ref_name }}'
-          releaseBody: 'See automated changelog and release notes below.'
+          releaseBody: ${{ env.RELEASE_BODY }}
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}

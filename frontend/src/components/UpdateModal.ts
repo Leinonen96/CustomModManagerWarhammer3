@@ -1,6 +1,7 @@
 import { Update } from '@tauri-apps/plugin-updater';
 import { updateController, UpdateProgress } from '../controllers/UpdateController';
 import { Toast } from './Toast';
+import { tauriInvoke } from '../api/client';
 
 export class UpdateModal {
     private overlay: HTMLElement;
@@ -81,7 +82,8 @@ export class UpdateModal {
                   day: 'numeric'
               })
             : '';
-        const bodyNotes = this.currentUpdate.body || 'No release notes provided.';
+        const bodyNotes = this.currentUpdate.body || '';
+        const notesHtml = formatReleaseNotesHtml(bodyNotes, newVer);
 
         this.modalBox.innerHTML = `
             <div class="modal-header">
@@ -109,7 +111,7 @@ export class UpdateModal {
 
             <div class="update-notes-container">
                 <h4 class="update-notes-title">Release Notes & Changelog:</h4>
-                <div class="update-notes-content">${escapeHtml(bodyNotes)}</div>
+                <div class="update-notes-content">${notesHtml}</div>
             </div>
 
             <div class="update-progress-container" id="update-progress-container" style="display: none;">
@@ -153,6 +155,16 @@ export class UpdateModal {
             }
             this.hide();
         };
+
+        const releaseBtn = this.modalBox.querySelector('[data-action="open-github-release"]') as HTMLElement | null;
+        if (releaseBtn) {
+            releaseBtn.onclick = () => {
+                const releaseUrl = releaseBtn.dataset.url || `https://github.com/Leinonen96/CustomModManagerWarhammer3/releases/tag/v${this.currentUpdate?.version}`;
+                tauriInvoke('open_url', { url: releaseUrl }).catch(err => {
+                    console.warn('Failed to open release URL:', err);
+                });
+            };
+        }
 
         if (closeBtn) closeBtn.onclick = handleDismiss;
         if (laterBtn) laterBtn.onclick = handleDismiss;
@@ -220,6 +232,74 @@ export class UpdateModal {
             actionBtn.innerHTML = 'Retry Download';
         }
     }
+}
+
+function formatReleaseNotesHtml(body: string, version: string): string {
+    const trimmed = (body || '').trim();
+    const isLegacyPlaceholder = !trimmed || trimmed.toLowerCase().includes('see automated changelog');
+    const releaseUrl = `https://github.com/Leinonen96/CustomModManagerWarhammer3/releases/tag/v${version}`;
+
+    if (isLegacyPlaceholder) {
+        return `
+            <div class="update-notes-placeholder">
+                <p>New update <strong>v${escapeHtml(version)}</strong> is ready to install.</p>
+                <button type="button" class="btn-link-external" data-action="open-github-release" data-url="${releaseUrl}">
+                    <span>View full changelog on GitHub</span>
+                    <svg class="external-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                </button>
+            </div>
+        `;
+    }
+
+    const lines = trimmed.split('\n');
+    let html = '';
+    let inList = false;
+
+    for (const rawLine of lines) {
+        const line = rawLine.trim();
+        if (!line) continue;
+
+        if (line.startsWith('###') || line.startsWith('##') || line.startsWith('#')) {
+            const headingText = line.replace(/^#+\s*/, '');
+            if (inList) {
+                html += '</ul>';
+                inList = false;
+            }
+            html += `<h5 class="update-notes-section-heading">${escapeHtml(headingText)}</h5><ul class="update-notes-list">`;
+            inList = true;
+            continue;
+        }
+
+        if (line.startsWith('•') || line.startsWith('* ') || line.startsWith('- ')) {
+            const itemText = line.replace(/^[•\*\-]\s*/, '');
+            if (!inList) {
+                html += '<ul class="update-notes-list">';
+                inList = true;
+            }
+            html += `<li>${escapeHtml(itemText)}</li>`;
+        } else {
+            if (inList) {
+                html += '</ul>';
+                inList = false;
+            }
+            html += `<p class="update-notes-para">${escapeHtml(line)}</p>`;
+        }
+    }
+
+    if (inList) {
+        html += '</ul>';
+    }
+
+    html += `
+        <div class="update-notes-footer">
+            <button type="button" class="btn-link-external" data-action="open-github-release" data-url="${releaseUrl}">
+                <span>View on GitHub</span>
+                <svg class="external-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+            </button>
+        </div>
+    `;
+
+    return html;
 }
 
 function escapeHtml(str: string): string {

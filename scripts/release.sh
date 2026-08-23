@@ -38,12 +38,16 @@ cargo test --manifest-path src-tauri/Cargo.toml
 
 # Commit and Tag
 echo "🏷️ Creating Git Commit and Tag v$NEW_VER..."
-git add package.json package-lock.json src-tauri/Cargo.toml src-tauri/tauri.conf.json
+git add package.json package-lock.json src-tauri/Cargo.toml src-tauri/Cargo.lock src-tauri/tauri.conf.json
 git commit -m "chore(release): bump version to v$NEW_VER"
 git tag "v$NEW_VER"
 
+# Push to GitHub
+echo "🚀 Pushing release v$NEW_VER and tags to GitHub..."
+git push origin main --tags
+
 echo ""
-echo "🚀 Release v$NEW_VER created locally!"
-echo "To trigger the automated GitHub Actions build and release, run:"
-echo "    git push origin main --tags"
+echo "🎉 Release v$NEW_VER successfully dispatched to GitHub Actions!"
+echo "Track packaging & release progress at:"
+echo "    https://github.com/Leinonen96/CustomModManagerWarhammer3/actions"
 echo ""

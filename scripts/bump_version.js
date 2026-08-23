@@ -74,7 +74,12 @@ updateFile('src-tauri/Cargo.toml', (content) => {
     return content.replace(/^version = ".*"/m, `version = "${targetVersion}"`);
 });
 
-// 4. src-tauri/tauri.conf.json
+// 4. src-tauri/Cargo.lock (if exists)
+updateFile('src-tauri/Cargo.lock', (content) => {
+    return content.replace(/(name = "wh3-mod-manager"\r?\nversion = )"[^"]+"/, `$1"${targetVersion}"`);
+});
+
+// 5. src-tauri/tauri.conf.json
 updateFile('src-tauri/tauri.conf.json', (content) => {
     const json = JSON.parse(content);
     json.version = targetVersion;

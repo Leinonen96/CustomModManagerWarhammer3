@@ -113,18 +113,99 @@
 }
 
 .update-notes-content {
-    font-family: 'JetBrains Mono', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
-    font-size: 0.82rem;
-    line-height: 1.45;
+    font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+    font-size: 0.84rem;
+    line-height: 1.5;
     color: var(--color-text-primary);
     background: var(--color-bg-card);
     border: 1px solid var(--color-border-subtle);
     border-radius: var(--radius-sm);
-    padding: 12px;
-    max-height: 180px;
+    padding: 12px 14px;
+    max-height: 200px;
     overflow-y: auto;
-    white-space: pre-wrap;
     word-break: break-word;
+}
+
+.update-notes-section-heading {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    margin: 0 0 6px 0;
+    letter-spacing: 0.02em;
+}
+
+.update-notes-list {
+    margin: 0 0 8px 0;
+    padding-left: 18px;
+    list-style-type: none;
+}
+
+.update-notes-list li {
+    position: relative;
+    padding-left: 4px;
+    margin-bottom: 4px;
+    color: var(--color-text-primary);
+    font-size: 0.82rem;
+}
+
+.update-notes-list li::before {
+    content: "•";
+    position: absolute;
+    left: -12px;
+    color: var(--color-primary);
+    font-weight: bold;
+}
+
+.update-notes-para {
+    margin: 0 0 6px 0;
+    font-size: 0.82rem;
+    color: var(--color-text-secondary);
+}
+
+.update-notes-placeholder {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 4px 0;
+}
+
+.update-notes-placeholder p {
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: 0.84rem;
+}
+
+.update-notes-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid var(--color-border-subtle);
+}
+
+.btn-link-external {
+    background: transparent;
+    border: none;
+    padding: 0;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: color 0.1s ease;
+}
+
+.btn-link-external:hover {
+    color: var(--color-primary-hover, #34d399);
+}
+
+.btn-link-external .external-icon {
+    width: 12px;
+    height: 12px;
 }
 
 /* Progress bar container */
