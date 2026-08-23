@@ -40,13 +40,37 @@ export class ModListManager {
     private initSortable(): void {
         const commonOptions: Sortable.Options = {
             group: 'shared-mods',
-            animation: 150,
+            animation: 220,
+            easing: 'cubic-bezier(0.2, 0, 0, 1)',
+            direction: 'vertical',
+            swapThreshold: 0.65,
+            invertSwap: true,
+            invertedSwapThreshold: 0.65,
+            emptyInsertThreshold: 10,
             ghostClass: 'sortable-ghost',
             chosenClass: 'sortable-chosen',
             dragClass: 'sortable-drag',
-            fallbackTolerance: 3,
-            onEnd: () => {
+            filter: '.card-action-btn, .steam-link, .order-input-square, a, button, input',
+            preventOnFilter: false,
+            fallbackTolerance: 4,
+            scroll: true,
+            scrollSensitivity: 75,
+            scrollSpeed: 16,
+            bubbleScroll: true,
+            onStart: () => {
                 this.isInternalDrag = true;
+            },
+            onEnd: (evt) => {
+                this.isInternalDrag = true;
+
+                // Cross-container drag-and-drop: immediately update card DOM state
+                if (evt.from !== evt.to && evt.item) {
+                    const isNowActive = evt.to === this.activeContainer;
+                    const totalActive = this.activeContainer.children.length;
+                    const newOrder = isNowActive ? (evt.newIndex !== undefined ? evt.newIndex + 1 : totalActive) : null;
+                    updateModCardState(evt.item, newOrder, totalActive);
+                }
+
                 this.syncActiveModsFromDom();
                 this.isInternalDrag = false;
                 this.triggerConflictAnalysis();
@@ -474,7 +498,7 @@ export class ModListManager {
                 if (numEl.innerText !== targetText) numEl.innerText = targetText;
                 numEl.classList.add('order-active', 'order-editable');
             }
-            const bottomBtn = el.querySelector('.btn-action-bottom') as HTMLElement | null;
+            const bottomBtn = el.querySelector('[data-action="bottom"]') as HTMLElement | null;
             if (bottomBtn) {
                 bottomBtn.title = `Move to Bottom (Priority #${totalActive})`;
             }
@@ -487,6 +511,11 @@ export class ModListManager {
             if (numEl && numEl.innerText !== '-') {
                 numEl.innerText = '-';
                 numEl.classList.remove('order-active', 'order-editable');
+            }
+            // Ensure any item moved to inactive list gets inactive buttons
+            const hasDeactivateBtn = el.querySelector('[data-action="deactivate"]');
+            if (hasDeactivateBtn) {
+                updateModCardState(el, null, totalActive);
             }
         }
 
