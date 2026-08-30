@@ -15,9 +15,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check:
-    name: Typecheck, Lint & Test
-    runs-on: ubuntu-24.04
+  test:
+    name: Test & Lint (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            is_linux: true
+          - os: windows-latest
+            is_linux: false
 
     steps:
       - name: Checkout repository
@@ -40,6 +48,7 @@ jobs:
           workspaces: src-tauri
 
       - name: Install Linux system dependencies
+        if: matrix.is_linux
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -70,4 +79,5 @@ jobs:
         run: cargo test --manifest-path src-tauri/Cargo.toml --verbose
 
       - name: Rust Code Formatting Check
+        if: matrix.is_linux
         run: cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
