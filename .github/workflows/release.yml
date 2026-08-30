@@ -6,23 +6,42 @@ on:
       - 'v*'
   workflow_dispatch:
     inputs:
-      tag:
-        description: 'Tag to release (e.g. v2.3.0)'
+      bump_type:
+        description: 'Bump Type (patch, minor, major, or custom)'
         required: true
+        type: choice
+        default: 'patch'
+        options:
+          - patch
+          - minor
+          - major
+          - custom
+      custom_version:
+        description: 'Custom Version (only if Bump Type is "custom", e.g. 2.3.0)'
+        required: false
+        type: string
+        default: ''
 
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  # ── CI Gate: must pass before any release binaries are built ──
-  ci-gate:
-    name: Pre-Release Verification
+  # ── Prepare & Verify Release ──
+  prepare-release:
+    name: Prepare & Verify Release
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    outputs:
+      release_tag: ${{ steps.set_tag.outputs.release_tag }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -73,10 +92,56 @@ jobs:
       - name: Rust Code Formatting Check
         run: cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
 
-  # ── Build & Release: runs after CI gate passes ──
+      # Handle automated version bumping when triggered from GitHub Actions UI
+      - name: Bump Version and Push Tag (Workflow Dispatch)
+        if: github.event_name == 'workflow_dispatch'
+        id: dispatch_bump
+        run: |
+          BUMP_TYPE="${{ github.event.inputs.bump_type }}"
+          CUSTOM_VER="${{ github.event.inputs.custom_version }}"
+
+          if [ "$BUMP_TYPE" = "custom" ]; then
+            if [ -z "$CUSTOM_VER" ]; then
+              echo "❌ Error: Custom version is required when bump_type is 'custom'"
+              exit 1
+            fi
+            TARGET_ARG="$CUSTOM_VER"
+          else
+            TARGET_ARG="$BUMP_TYPE"
+          fi
+
+          echo "📦 Running version bump with: $TARGET_ARG"
+          node scripts/bump_version.js "$TARGET_ARG"
+
+          NEW_VER=$(node -p "require('./package.json').version")
+          TAG_NAME="v${NEW_VER}"
+          echo "NEW_TAG=$TAG_NAME" >> $GITHUB_ENV
+
+          # Configure bot git user
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add package.json package-lock.json src-tauri/Cargo.toml src-tauri/Cargo.lock src-tauri/tauri.conf.json
+          git commit -m "chore(release): bump version to ${TAG_NAME} [skip ci]"
+          git tag "$TAG_NAME"
+          git push origin main "$TAG_NAME"
+
+      # Determine final release tag output
+      - name: Resolve Release Tag
+        id: set_tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            FINAL_TAG="${{ env.NEW_TAG }}"
+          else
+            FINAL_TAG="${{ github.ref_name }}"
+          fi
+          echo "Release tag: $FINAL_TAG"
+          echo "release_tag=$FINAL_TAG" >> $GITHUB_OUTPUT
+
+  # ── Build & Release Binaries on Linux and Windows ──
   build-release:
     name: Build & Release (${{ matrix.platform }})
-    needs: [ci-gate]
+    needs: [prepare-release]
     permissions:
       contents: write
     strategy:
@@ -95,6 +160,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          ref: ${{ needs.prepare-release.outputs.release_tag }}
           fetch-depth: 0
 
       - name: Setup Node.js
@@ -139,14 +205,14 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: 'WH3 Mod Manager ${{ github.ref_name }}'
+          tagName: ${{ needs.prepare-release.outputs.release_tag }}
+          releaseName: 'WH3 Mod Manager ${{ needs.prepare-release.outputs.release_tag }}'
           releaseBody: ''
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
 
-      - name: Generate SHA256 checksums
+      - name: Generate Linux SHA256 checksums
         if: runner.os == 'Linux'
         shell: bash
         run: |
@@ -156,16 +222,16 @@ jobs:
           echo "Generated checksums:"
           cat checksums-linux.txt
 
-      - name: Upload checksums to release
+      - name: Upload Linux checksums to release
         if: runner.os == 'Linux'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ needs.prepare-release.outputs.release_tag }}
           files: src-tauri/target/release/bundle/checksums-linux.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Generate Windows checksums
+      - name: Generate Windows SHA256 checksums
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
@@ -185,7 +251,7 @@ jobs:
         if: runner.os == 'Windows'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ needs.prepare-release.outputs.release_tag }}
           files: src-tauri/target/release/bundle/checksums-windows.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
