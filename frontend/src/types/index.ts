@@ -21,6 +21,28 @@ export interface Mod {
     author?: string;
 }
 
+export type SortField = 
+    | 'order'
+    | 'date'
+    | 'title'
+    | 'filename'
+    | 'size'
+    | 'source'
+    | 'conflicts';
+
+export type SortDirection = 'asc' | 'desc';
+
+export type FilterType = 'all' | 'workshop' | 'local' | 'conflicted' | 'pinned';
+
+export interface SortFilterState {
+    inactiveSortField: SortField;
+    inactiveSortDirection: SortDirection;
+    inactiveFilterType: FilterType;
+    activeSortField: SortField;
+    activeSortDirection: SortDirection;
+    activeFilterType: FilterType;
+}
+
 export type PackType = 'Movie' | 'Boot' | 'Release' | 'Mod' | { Unknown: number };
 
 export type ConflictSeverity = 

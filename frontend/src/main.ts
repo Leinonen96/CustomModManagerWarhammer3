@@ -16,6 +16,7 @@ import { InspectorDrawer } from './components/InspectorDrawer';
 import { PanelResizer } from './components/PanelResizer';
 import { StudioTooltip } from './components/StudioTooltip';
 import { updateController } from './controllers/UpdateController';
+import { syncController } from './controllers/SyncController';
 import { Toast } from './components/Toast';
 
 class App {
@@ -89,6 +90,9 @@ class App {
 
             // Initial conflict indexing
             this.modListManager.triggerConflictAnalysis();
+
+            // Initialize 3-tier live mod sync (FS Watcher, Focus Sync, Hotkeys)
+            await syncController.init();
 
             if (mods.length === 0) {
                 Toast.warning('No mods found in the configured workshop directory. Check Settings.');

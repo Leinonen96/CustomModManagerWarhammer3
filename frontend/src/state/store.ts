@@ -1,7 +1,7 @@
 /**
  * Central Reactive Application State Store.
  */
-import { Mod, AppConfig, ConflictAnalysisResult, UserOverrideRule, RuleType } from '../types';
+import { Mod, AppConfig, ConflictAnalysisResult, UserOverrideRule, RuleType, SortField, SortDirection, FilterType } from '../types';
 import { saveConfig } from '../api/configApi';
 
 export type StoreEvent = 
@@ -16,7 +16,8 @@ export type StoreEvent =
     | 'INSPECTOR_CHANGED'
     | 'DRAWER_TOGGLED'
     | 'PINNED_MODS_CHANGED'
-    | 'USER_RULES_CHANGED';
+    | 'USER_RULES_CHANGED'
+    | 'SORT_FILTER_CHANGED';
 
 type Listener = () => void;
 
@@ -29,6 +30,14 @@ class AppStore {
     private searchInactive: string = '';
     private searchActive: string = '';
     private isApplying: boolean = false;
+
+    // Sorting and Filtering State
+    private inactiveSortField: SortField = 'date';
+    private inactiveSortDirection: SortDirection = 'desc';
+    private inactiveFilterType: FilterType = 'all';
+    private activeSortField: SortField = 'order';
+    private activeSortDirection: SortDirection = 'asc';
+    private activeFilterType: FilterType = 'all';
 
     // Pinning and User Override Rules
     private pinnedMods: Map<string, number> = new Map();
@@ -56,7 +65,8 @@ class AppStore {
             'INSPECTOR_CHANGED',
             'DRAWER_TOGGLED',
             'PINNED_MODS_CHANGED',
-            'USER_RULES_CHANGED'
+            'USER_RULES_CHANGED',
+            'SORT_FILTER_CHANGED'
         ];
         events.forEach(e => this.listeners.set(e, new Set()));
     }
@@ -79,6 +89,49 @@ class AppStore {
     public setAllMods(mods: Mod[]): void {
         this.allMods = mods;
         this.emit('MODS_CHANGED');
+    }
+
+    /**
+     * Non-destructive state reconciliation for dynamic mod updates.
+     * Updates the full mod catalog while strictly preserving active load orders,
+     * custom pin assignments, and selection states.
+     */
+    public updateAllModsPreservingState(newMods: Mod[]): { added: number; removed: number; changed: boolean } {
+        const getModKey = (m: { name?: string; id?: string }) => m.name || m.id || '';
+
+        const oldMap = new Map(this.allMods.map(m => [getModKey(m), m]));
+        const newMap = new Map(newMods.map(m => [getModKey(m), m]));
+
+        let added = 0;
+        let removed = 0;
+
+        for (const [key] of newMap) {
+            if (!oldMap.has(key)) added++;
+        }
+        for (const [key] of oldMap) {
+            if (!newMap.has(key)) removed++;
+        }
+
+        const changed = added > 0 || removed > 0;
+
+        if (changed || this.allMods.length !== newMods.length) {
+            this.allMods = newMods;
+
+            // Reconcile active mods: preserve exact order and pinned state, but prune mods that no longer exist on disk
+            const updatedActive = this.activeMods
+                .filter(m => newMap.has(getModKey(m)))
+                .map(m => newMap.get(getModKey(m)) || m);
+
+            const activeChanged = updatedActive.length !== this.activeMods.length;
+            this.activeMods = updatedActive;
+
+            this.emit('MODS_CHANGED');
+            if (activeChanged) {
+                this.emit('ACTIVE_MODS_CHANGED');
+            }
+        }
+
+        return { added, removed, changed };
     }
 
     public getActiveMods(): Mod[] {
@@ -294,6 +347,154 @@ class AppStore {
     public setDrawerTab(tab: 'overview' | 'conflicts' | 'dependencies'): void {
         this.drawerActiveTab = tab;
         this.emit('INSPECTOR_CHANGED');
+    }
+
+    // --- Sorting & Filtering Engine ---
+
+    public getInactiveSort(): { field: SortField; direction: SortDirection } {
+        return { field: this.inactiveSortField, direction: this.inactiveSortDirection };
+    }
+
+    public setInactiveSort(field: SortField, direction: SortDirection): void {
+        this.inactiveSortField = field;
+        this.inactiveSortDirection = direction;
+        this.emit('SORT_FILTER_CHANGED');
+    }
+
+    public getInactiveFilterType(): FilterType {
+        return this.inactiveFilterType;
+    }
+
+    public setInactiveFilterType(filter: FilterType): void {
+        this.inactiveFilterType = filter;
+        this.emit('SORT_FILTER_CHANGED');
+    }
+
+    public getActiveSort(): { field: SortField; direction: SortDirection } {
+        return { field: this.activeSortField, direction: this.activeSortDirection };
+    }
+
+    public setActiveSort(field: SortField, direction: SortDirection): void {
+        this.activeSortField = field;
+        this.activeSortDirection = direction;
+        this.emit('SORT_FILTER_CHANGED');
+    }
+
+    public getActiveFilterType(): FilterType {
+        return this.activeFilterType;
+    }
+
+    public setActiveFilterType(filter: FilterType): void {
+        this.activeFilterType = filter;
+        this.emit('SORT_FILTER_CHANGED');
+    }
+
+    private compareMods(a: Mod, b: Mod, field: SortField, direction: SortDirection): number {
+        let diff = 0;
+        switch (field) {
+            case 'date': {
+                const timeA = a.last_modified || 0;
+                const timeB = b.last_modified || 0;
+                diff = timeA - timeB;
+                break;
+            }
+            case 'title': {
+                const titleA = (a.title || a.name || '').toLowerCase();
+                const titleB = (b.title || b.name || '').toLowerCase();
+                diff = titleA.localeCompare(titleB);
+                break;
+            }
+            case 'filename': {
+                const nameA = (a.name || '').toLowerCase();
+                const nameB = (b.name || '').toLowerCase();
+                diff = nameA.localeCompare(nameB);
+                break;
+            }
+            case 'size': {
+                const sizeA = a.file_size_bytes || 0;
+                const sizeB = b.file_size_bytes || 0;
+                diff = sizeA - sizeB;
+                break;
+            }
+            case 'source': {
+                const srcA = (a.source_type || 'Workshop').toLowerCase();
+                const srcB = (b.source_type || 'Workshop').toLowerCase();
+                diff = srcA.localeCompare(srcB);
+                break;
+            }
+            case 'conflicts': {
+                const confA = this.getModConflictScore(a);
+                const confB = this.getModConflictScore(b);
+                diff = confA - confB;
+                break;
+            }
+            default:
+                diff = 0;
+        }
+
+        // Secondary tiebreaker by title
+        if (diff === 0 && field !== 'title') {
+            const titleA = (a.title || a.name || '').toLowerCase();
+            const titleB = (b.title || b.name || '').toLowerCase();
+            diff = titleA.localeCompare(titleB);
+        }
+
+        return direction === 'asc' ? diff : -diff;
+    }
+
+    public getModConflictScore(mod: Mod): number {
+        const summaries = this.conflictAnalysis?.summaries;
+        if (!summaries) return 0;
+        const s = summaries[mod.name] || (mod.id ? summaries[mod.id] : null);
+        if (!s) return 0;
+        return (s.fatal_startpos_count * 1000) + 
+               ((s.script_overrides_won + s.script_overrides_lost + s.ui_overrides_won + s.ui_overrides_lost) * 10) + 
+               (s.missing_dependencies?.length || 0);
+    }
+
+    public getFilteredAndSortedInactiveMods(): Mod[] {
+        const activeIds = new Set(this.activeMods.map(m => m.name || m.id));
+        let list = this.allMods.filter(m => !activeIds.has(m.name || m.id));
+
+        // Filter Type
+        if (this.inactiveFilterType === 'workshop') {
+            list = list.filter(m => (m.source_type || 'Workshop').toLowerCase() === 'workshop' && m.id !== 'Local');
+        } else if (this.inactiveFilterType === 'local') {
+            list = list.filter(m => (m.source_type || '').toLowerCase() === 'local' || m.id === 'Local');
+        } else if (this.inactiveFilterType === 'conflicted') {
+            list = list.filter(m => this.getModConflictScore(m) > 0);
+        }
+
+        // Sort
+        list.sort((a, b) => this.compareMods(a, b, this.inactiveSortField, this.inactiveSortDirection));
+        return list;
+    }
+
+    public getFilteredAndSortedActiveMods(): { mod: Mod; originalOrder: number }[] {
+        let items = this.activeMods.map((mod, index) => ({
+            mod,
+            originalOrder: index + 1
+        }));
+
+        // Filter Type
+        if (this.activeFilterType === 'workshop') {
+            items = items.filter(item => (item.mod.source_type || 'Workshop').toLowerCase() === 'workshop' && item.mod.id !== 'Local');
+        } else if (this.activeFilterType === 'local') {
+            items = items.filter(item => (item.mod.source_type || '').toLowerCase() === 'local' || item.mod.id === 'Local');
+        } else if (this.activeFilterType === 'conflicted') {
+            items = items.filter(item => this.getModConflictScore(item.mod) > 0);
+        } else if (this.activeFilterType === 'pinned') {
+            items = items.filter(item => this.isModPinned(item.mod.name || item.mod.id));
+        }
+
+        // Sort
+        if (this.activeSortField !== 'order') {
+            items.sort((a, b) => this.compareMods(a.mod, b.mod, this.activeSortField, this.activeSortDirection));
+        } else if (this.activeSortDirection === 'desc') {
+            items.reverse();
+        }
+
+        return items;
     }
 }
 

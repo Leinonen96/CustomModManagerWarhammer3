@@ -7,6 +7,7 @@ import { fetchPresetsList, fetchPresetDetails, savePreset, deletePreset } from '
 import { applyLoadOrder, launchGame } from '../api/loadOrderApi';
 import { saveConfig } from '../api/configApi';
 import { autoSortDependencies } from '../api/conflictApi';
+import { syncController } from '../controllers/SyncController';
 import { CustomSelect } from './CustomSelect';
 import { SettingsModal } from './SettingsModal';
 import { Toast } from './Toast';
@@ -18,6 +19,7 @@ export class HeaderControls {
     private loadPresetBtn!: HTMLButtonElement;
     private savePresetBtn!: HTMLButtonElement;
     private deletePresetBtn!: HTMLButtonElement;
+    private refreshBtn!: HTMLButtonElement;
     private autoSortBtn!: HTMLButtonElement;
     private toggleInspectorBtn!: HTMLButtonElement;
     private settingsBtn!: HTMLButtonElement;
@@ -38,6 +40,7 @@ export class HeaderControls {
         this.loadPresetBtn = document.getElementById('btn-load-preset') as HTMLButtonElement;
         this.savePresetBtn = document.getElementById('btn-save-preset') as HTMLButtonElement;
         this.deletePresetBtn = document.getElementById('btn-delete-preset') as HTMLButtonElement;
+        this.refreshBtn = document.getElementById('btn-refresh-mods') as HTMLButtonElement;
         this.autoSortBtn = document.getElementById('btn-auto-sort') as HTMLButtonElement;
         this.toggleInspectorBtn = document.getElementById('btn-toggle-inspector') as HTMLButtonElement;
         this.settingsBtn = document.getElementById('btn-open-settings') as HTMLButtonElement;
@@ -56,6 +59,12 @@ export class HeaderControls {
         this.loadPresetBtn.onclick = () => this.handleLoadPreset();
         this.savePresetBtn.onclick = () => this.handleSavePreset();
         this.deletePresetBtn.onclick = () => this.handleDeletePreset();
+        
+        if (this.refreshBtn) {
+            this.refreshBtn.onclick = () => {
+                syncController.refreshNow(true);
+            };
+        }
         
         if (this.autoSortBtn) {
             this.autoSortBtn.onclick = async () => {

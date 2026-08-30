@@ -148,7 +148,7 @@ export class InspectorDrawer {
             this.subtitleEl.innerText = '';
             this.bodyEl.innerHTML = `
                 <div class="drawer-empty-state">
-                    <p>Select any mod or click 🔍 on a card to inspect pack files, dependencies, and conflicts.</p>
+                    <p>Select any mod card or right-click to inspect pack files, dependencies, and conflicts.</p>
                 </div>
             `;
             this.conflictsBadge.innerText = '0';

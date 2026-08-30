@@ -416,6 +416,115 @@ body.resizing-panels #panel-resizer {
     color: var(--color-text-muted);
 }
 
+/* --- PANEL TOOLBAR & SORT/FILTER CONTROLS --- */
+.panel-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+}
+
+.sort-control {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.sort-control .custom-select-wrapper {
+    min-width: 160px;
+    height: 26px;
+}
+
+.sort-control .custom-select-trigger {
+    padding: 0 8px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: var(--color-bg-surface-elevated);
+    border-color: var(--color-border-subtle);
+    border-radius: var(--radius-sm);
+}
+
+.sort-control .custom-select-trigger:hover {
+    background: var(--color-bg-surface-hover);
+    border-color: var(--color-border-medium);
+}
+
+.sort-control .custom-select-menu {
+    top: calc(100% + 3px);
+    max-height: 280px;
+    z-index: 1200;
+}
+
+.sort-control .custom-select-item {
+    font-size: 0.78rem;
+    padding: 5px 10px;
+}
+
+.sort-label {
+    font-size: 0.73rem;
+    font-weight: 700;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.filter-pills {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.filter-pill {
+    background: transparent;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-secondary);
+    font-size: 0.74rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    height: 26px;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    user-select: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.filter-pill .pill-icon {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+    opacity: 0.75;
+    transition: opacity 0.12s ease;
+}
+
+.filter-pill:hover {
+    background: var(--color-bg-surface-elevated);
+    color: var(--color-text-primary);
+    border-color: var(--color-border-medium);
+}
+
+.filter-pill:hover .pill-icon {
+    opacity: 1;
+}
+
+.filter-pill.active {
+    background: var(--color-primary-subtle);
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+    font-weight: 700;
+}
+
+.filter-pill.active .pill-icon {
+    opacity: 1;
+}
+
 /* --- BADGES & PILLS --- */
 .count-badge {
     font-family: 'JetBrains Mono', monospace;

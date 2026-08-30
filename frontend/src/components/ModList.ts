@@ -11,6 +11,7 @@ import { Toast } from './Toast';
 import { tauriInvoke } from '../api/client';
 import { analyzeLoadOrderConflicts } from '../api/conflictApi';
 import { ContextMenu } from './ContextMenu';
+import { CustomSelect, CustomSelectOption } from './CustomSelect';
 
 export class ModListManager {
     private inactiveContainer: HTMLElement;
@@ -19,6 +20,8 @@ export class ModListManager {
     private activeCountBadge: HTMLElement | null = null;
     private sortableInactive: Sortable | null = null;
     private sortableActive: Sortable | null = null;
+    private sortInactiveSelect: CustomSelect | null = null;
+    private sortActiveSelect: CustomSelect | null = null;
     private isInternalDrag: boolean = false;
     private conflictDebounceTimer: any = null;
     private filterRafId: number | null = null;
@@ -34,6 +37,7 @@ export class ModListManager {
 
         this.initSortable();
         this.bindDelegatedEvents();
+        this.bindSortAndFilterControls();
         this.bindStoreEvents();
     }
 
@@ -218,6 +222,96 @@ export class ModListManager {
         }
     }
 
+    private bindSortAndFilterControls(): void {
+        const inactiveOptions: CustomSelectOption[] = [
+            { value: 'date:desc', label: 'Newest Updated' },
+            { value: 'date:asc', label: 'Oldest Updated' },
+            { value: 'title:asc', label: 'Title (A → Z)' },
+            { value: 'title:desc', label: 'Title (Z → A)' },
+            { value: 'filename:asc', label: 'Pack Name (A → Z)' },
+            { value: 'size:desc', label: 'Size (Largest)' },
+            { value: 'size:asc', label: 'Size (Smallest)' },
+            { value: 'source:asc', label: 'Local First' },
+            { value: 'source:desc', label: 'Workshop First' },
+            { value: 'conflicts:desc', label: 'Most Conflicted' }
+        ];
+
+        const activeOptions: CustomSelectOption[] = [
+            { value: 'order:asc', label: 'Load Order (#1 → #N)' },
+            { value: 'order:desc', label: 'Reverse Order (#N → #1)' },
+            { value: 'date:desc', label: 'Newest Updated' },
+            { value: 'date:asc', label: 'Oldest Updated' },
+            { value: 'title:asc', label: 'Title (A → Z)' },
+            { value: 'title:desc', label: 'Title (Z → A)' },
+            { value: 'size:desc', label: 'Size (Largest)' },
+            { value: 'conflicts:desc', label: 'Most Conflicted' }
+        ];
+
+        const inactiveContainer = document.getElementById('sort-inactive-container');
+        if (inactiveContainer) {
+            this.sortInactiveSelect = new CustomSelect(inactiveContainer, 'Newest Updated');
+            this.sortInactiveSelect.setOptions(inactiveOptions, 'date:desc');
+            this.sortInactiveSelect.onChange((val) => {
+                const [field, direction] = val.split(':');
+                if (field && direction) {
+                    store.setInactiveSort(field as any, direction as any);
+                }
+            });
+        }
+
+        const activeContainer = document.getElementById('sort-active-container');
+        if (activeContainer) {
+            this.sortActiveSelect = new CustomSelect(activeContainer, 'Load Order (#1 → #N)');
+            this.sortActiveSelect.setOptions(activeOptions, 'order:asc');
+            this.sortActiveSelect.onChange((val) => {
+                const [field, direction] = val.split(':');
+                if (field && direction) {
+                    store.setActiveSort(field as any, direction as any);
+                }
+            });
+        }
+
+        const filterInactivePills = document.getElementById('filter-inactive-pills');
+        if (filterInactivePills) {
+            filterInactivePills.addEventListener('click', (e) => {
+                const target = (e.target as HTMLElement).closest('.filter-pill') as HTMLElement | null;
+                if (!target) return;
+                const clickedFilter = (target.dataset.filter || 'all') as any;
+                const currentFilter = store.getInactiveFilterType();
+
+                // If clicking an already-active specific filter, toggle back to 'all'
+                const nextFilter = (clickedFilter !== 'all' && currentFilter === clickedFilter) ? 'all' : clickedFilter;
+
+                filterInactivePills.querySelectorAll('.filter-pill').forEach(btn => {
+                    const b = btn as HTMLElement;
+                    b.classList.toggle('active', b.dataset.filter === nextFilter);
+                });
+
+                store.setInactiveFilterType(nextFilter);
+            });
+        }
+
+        const filterActivePills = document.getElementById('filter-active-pills');
+        if (filterActivePills) {
+            filterActivePills.addEventListener('click', (e) => {
+                const target = (e.target as HTMLElement).closest('.filter-pill') as HTMLElement | null;
+                if (!target) return;
+                const clickedFilter = (target.dataset.filter || 'all') as any;
+                const currentFilter = store.getActiveFilterType();
+
+                // If clicking an already-active specific filter, toggle back to 'all'
+                const nextFilter = (clickedFilter !== 'all' && currentFilter === clickedFilter) ? 'all' : clickedFilter;
+
+                filterActivePills.querySelectorAll('.filter-pill').forEach(btn => {
+                    const b = btn as HTMLElement;
+                    b.classList.toggle('active', b.dataset.filter === nextFilter);
+                });
+
+                store.setActiveFilterType(nextFilter);
+            });
+        }
+    }
+
     private bindStoreEvents(): void {
         store.subscribe('MODS_CHANGED', () => {
             if (!this.isInternalDrag) this.render();
@@ -230,6 +324,9 @@ export class ModListManager {
             if (!this.isInternalDrag) this.render();
         });
         store.subscribe('USER_RULES_CHANGED', () => {
+            if (!this.isInternalDrag) this.render();
+        });
+        store.subscribe('SORT_FILTER_CHANGED', () => {
             if (!this.isInternalDrag) this.render();
         });
         store.subscribe('SEARCH_CHANGED', () => this.applyFilters());
@@ -274,16 +371,14 @@ export class ModListManager {
     }
 
     /**
-     * High-performance Keyed DOM Reconciliation.
+     * High-performance Keyed DOM Reconciliation with Sorting and Filtering.
      * Reuses existing card DOM elements from `cardCache` instead of wiping innerHTML,
      * maintaining hardware image decodes and eliminating layout reflows.
      */
     public render(): void {
-        const allMods = store.getAllMods();
-        const activeMods = store.getActiveMods();
-        
-        const activeNameSet = new Set(activeMods.map(m => m.name || m.id));
-        const inactiveMods = allMods.filter(m => !activeNameSet.has(m.name || m.id));
+        const inactiveMods = store.getFilteredAndSortedInactiveMods();
+        const activeItems = store.getFilteredAndSortedActiveMods();
+        const totalActive = store.getActiveMods().length;
 
         // 1. Reconcile Inactive Container
         const inactiveFrag = document.createDocumentFragment();
@@ -291,10 +386,10 @@ export class ModListManager {
             const key = getModIdentifier(mod);
             let card = this.cardCache.get(key);
             if (!card) {
-                card = createModCard(mod, null, activeMods.length);
+                card = createModCard(mod, null, totalActive);
                 this.cardCache.set(key, card);
             } else {
-                updateModCardState(card, null, activeMods.length);
+                updateModCardState(card, null, totalActive);
             }
             inactiveFrag.appendChild(card);
         });
@@ -302,20 +397,20 @@ export class ModListManager {
 
         // 2. Reconcile Active Container
         const activeFrag = document.createDocumentFragment();
-        activeMods.forEach((mod, index) => {
+        activeItems.forEach(({ mod, originalOrder }) => {
             const key = getModIdentifier(mod);
             let card = this.cardCache.get(key);
             if (!card) {
-                card = createModCard(mod, index + 1, activeMods.length);
+                card = createModCard(mod, originalOrder, totalActive);
                 this.cardCache.set(key, card);
             } else {
-                updateModCardState(card, index + 1, activeMods.length);
+                updateModCardState(card, originalOrder, totalActive);
             }
             activeFrag.appendChild(card);
         });
         this.activeContainer.replaceChildren(activeFrag);
 
-        this.updateCounts(inactiveMods.length, activeMods.length);
+        this.updateCounts(inactiveMods.length, activeItems.length);
         this.applyFilters();
         this.updateConflictBadges();
     }
@@ -490,6 +585,13 @@ export class ModListManager {
         }
 
         store.setActiveMods(newActiveMods, { silent: true });
+
+        // If manual drag occurred while in a visual sort view, reset active sort selector to Load Order mode
+        if (this.sortActiveSelect && store.getActiveSort().field !== 'order') {
+            this.sortActiveSelect.setValue('order:asc', false);
+            store.setActiveSort('order', 'asc');
+        }
+
         this.updateOrderNumbers();
     }
 

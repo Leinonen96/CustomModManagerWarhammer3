@@ -24,7 +24,11 @@ const ICONS = {
     remove: `<svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`,
     pin: `<svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.89A2 2 0 0 1 15 10.77V5a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v5.77a2 2 0 0 1-1.11 1.79l-1.78.89A2 2 0 0 0 5 15.24Z"></path></svg>`,
     pinFilled: `<svg class="action-icon action-icon-pinned" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22" stroke-width="2.5"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.89A2 2 0 0 1 15 10.77V5a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v5.77a2 2 0 0 1-1.11 1.79l-1.78.89A2 2 0 0 0 5 15.24Z"></path></svg>`,
-    external: `<svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>`,
+    clock: `<svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`,
+    disk: `<svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="12" x2="2" y2="12"></line><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path><line x1="6" y1="16" x2="6.01" y2="16"></line><line x1="10" y1="16" x2="10.01" y2="16"></line></svg>`,
+    globe: `<svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`,
+    folder: `<svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`,
+    external: `<svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>`,
     core: `<svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>`,
     fatal: `<svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`,
     up: `<svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"></polyline></svg>`,
@@ -32,6 +36,59 @@ const ICONS = {
     movie: `<svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg>`,
     dep: `<svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`
 };
+
+export function formatDate(timestamp?: number): { relative: string; full: string; isRecent: boolean } | null {
+    if (!timestamp || timestamp <= 0) return null;
+    const ms = timestamp < 1e11 ? timestamp * 1000 : timestamp;
+    const date = new Date(ms);
+    if (isNaN(date.getTime())) return null;
+
+    const now = Date.now();
+    const diffMs = now - ms;
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHour = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHour / 24);
+    const isRecent = diffDay <= 7 && diffDay >= 0;
+
+    let relative = '';
+    if (diffDay === 0) {
+        if (diffMin < 1) relative = 'Just now';
+        else if (diffMin < 60) relative = `${diffMin}m ago`;
+        else relative = `${diffHour}h ago`;
+    } else if (diffDay === 1) {
+        relative = 'Yesterday';
+    } else if (diffDay < 30) {
+        relative = `${diffDay}d ago`;
+    } else if (diffDay < 365) {
+        const months = Math.floor(diffDay / 30);
+        relative = `${months}mo ago`;
+    } else {
+        const years = Math.floor(diffDay / 365);
+        relative = `${years}y ago`;
+    }
+
+    const full = date.toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+
+    return { relative, full, isRecent };
+}
+
+export function formatFileSize(bytes?: number): string {
+    if (!bytes || bytes <= 0) return '';
+    if (bytes < 1024 * 1024) {
+        return (bytes / 1024).toFixed(0) + ' KB';
+    }
+    if (bytes < 1024 * 1024 * 1024) {
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+    return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+}
 
 function buildConflictBadgesHtml(summary: ModConflictSummary | null | undefined, isMoviePackMod: boolean = false, isPinned: boolean = false, pinnedPos?: number): string {
     let badgesHtml = '';
@@ -134,10 +191,9 @@ export function createModCard(
         div.classList.add('mod-item-inspected');
     }
 
-    // Format file size
-    const sizeMb = mod.file_size_bytes
-        ? (mod.file_size_bytes / (1024 * 1024)).toFixed(1) + ' MB'
-        : '';
+    // Format file size & date
+    const sizeFormatted = formatFileSize(mod.file_size_bytes);
+    const dateInfo = formatDate(mod.last_modified);
 
     const isWorkshop = (mod.source_type || 'Workshop').toLowerCase() === 'workshop' || Boolean(mod.id && mod.id.length > 5 && !isNaN(Number(mod.id)));
     const steamUrl = mod.url || (isWorkshop && mod.id ? `https://steamcommunity.com/sharedfiles/filedetails/?id=${mod.id}` : '');
@@ -185,14 +241,12 @@ export function createModCard(
             <span class="mod-title" title="${escapeHtml(mod.title || mod.name)}">${escapeHtml(mod.title || mod.name)}</span>
             <span class="mod-filename" title="${escapeHtml(mod.name)}">${escapeHtml(mod.name)}</span>
             <div class="mod-meta">
-                <span class="mod-id">ID: ${escapeHtml(mod.id || 'Local')}</span>
-                ${steamUrl ? `
-                    <span class="meta-dot">&bull;</span>
-                    <a href="${steamUrl}" class="steam-link" data-action="steam" title="Open Steam Workshop page">View on Steam ${ICONS.external}</a>
-                ` : ''}
-                <span class="meta-dot">&bull;</span>
-                <span class="mod-meta-subtle">${isWorkshop ? 'WS' : 'LOCAL'}</span>
-                ${sizeMb ? `<span class="meta-dot">&bull;</span><span class="mod-meta-subtle">${sizeMb}</span>` : ''}
+                ${dateInfo ? `<span class="meta-detail ${dateInfo.isRecent ? 'meta-recent' : ''}" title="Last Modified: ${dateInfo.full}">${ICONS.clock} ${dateInfo.isRecent ? 'Updated ' + dateInfo.relative : dateInfo.relative}</span>` : ''}
+                ${dateInfo && sizeFormatted ? '<span class="meta-sep"></span>' : ''}
+                ${sizeFormatted ? `<span class="meta-detail" title="Pack File Size: ${sizeFormatted}">${ICONS.disk} ${sizeFormatted}</span>` : ''}
+                <span class="meta-sep"></span>
+                <span class="meta-detail meta-origin ${isWorkshop ? 'meta-origin-ws' : 'meta-origin-local'}" title="${isWorkshop ? `Workshop ID: ${escapeHtml(mod.id || '')}` : 'Local /data/ Pack'}">${isWorkshop ? ICONS.globe : ICONS.folder} ${isWorkshop ? 'Workshop' : 'Local'}</span>
+                ${steamUrl ? `<span class="meta-sep"></span><a href="${steamUrl}" class="meta-link steam-link" data-action="steam" title="Open Steam Workshop page">${ICONS.external} Steam</a>` : ''}
                 ${conflictBadgesHtml ? `<div class="conflict-badge-group">${conflictBadgesHtml}</div>` : ''}
             </div>
         </div>

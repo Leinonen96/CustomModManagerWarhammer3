@@ -18,8 +18,10 @@ export class CustomSelect {
     private isOpen: boolean = false;
     private changeCallbacks: ((value: string) => void)[] = [];
     private highlightedIndex: number = -1;
+    private placeholder: string = '-- Select --';
 
-    constructor(containerIdOrElement: string | HTMLElement) {
+    constructor(containerIdOrElement: string | HTMLElement, placeholder: string = '-- Select --') {
+        this.placeholder = placeholder;
         if (typeof containerIdOrElement === 'string') {
             this.container = document.getElementById(containerIdOrElement) as HTMLElement;
         } else {
@@ -34,7 +36,7 @@ export class CustomSelect {
         this.container.classList.add('custom-select-wrapper');
         this.container.innerHTML = `
             <button type="button" class="custom-select-trigger" aria-haspopup="listbox" aria-expanded="false">
-                <span class="custom-select-label">-- Select Preset --</span>
+                <span class="custom-select-label">${this.placeholder}</span>
                 <span class="custom-select-arrow"></span>
             </button>
             <div class="custom-select-menu" role="listbox" style="display: none;"></div>
@@ -93,7 +95,7 @@ export class CustomSelect {
     public setOptions(options: (CustomSelectOption | string)[], selectedValue?: string): void {
         this.options = options.map(opt => {
             if (typeof opt === 'string') {
-                return { value: opt, label: opt || '-- Select Preset --' };
+                return { value: opt, label: opt || this.placeholder };
             }
             return opt;
         });
@@ -183,7 +185,7 @@ export class CustomSelect {
 
     private updateTriggerText(): void {
         const found = this.options.find(o => o.value === this.selectedValue);
-        this.labelEl.innerText = found ? (found.label || '-- Select Preset --') : '-- Select Preset --';
+        this.labelEl.innerText = found ? (found.label || this.placeholder) : this.placeholder;
     }
 
     private highlightNext(): void {

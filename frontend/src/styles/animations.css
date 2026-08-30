@@ -72,3 +72,20 @@
     opacity: 1;
     transform: translateY(0);
 }
+
+/* Spinner animation for dynamic refresh controls */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.spin,
+#btn-refresh-mods.loading .icon-refresh,
+.btn.loading .btn-icon {
+    animation: spin 0.75s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
