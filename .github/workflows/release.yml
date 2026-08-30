@@ -6,20 +6,84 @@ on:
       - 'v*'
   workflow_dispatch:
     inputs:
-      version:
-        description: 'Release version (e.g. 2.0.1)'
+      tag:
+        description: 'Tag to release (e.g. v2.3.0)'
         required: true
-        default: '2.0.1'
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
+  # ── CI Gate: must pass before any release binaries are built ──
+  ci-gate:
+    name: Pre-Release Verification
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install Linux system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libssl-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libxdo-dev
+
+      - name: Install NPM dependencies
+        run: npm ci
+
+      - name: TypeScript Typecheck
+        run: npm run typecheck
+
+      - name: Frontend Production Build (Vite)
+        run: npm run build
+
+      - name: Rust Clippy Lints
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings
+
+      - name: Rust Backend Tests
+        run: cargo test --manifest-path src-tauri/Cargo.toml --verbose
+
+      - name: Rust Code Formatting Check
+        run: cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
+
+  # ── Build & Release: runs after CI gate passes ──
   build-release:
     name: Build & Release (${{ matrix.platform }})
+    needs: [ci-gate]
     permissions:
       contents: write
     strategy:
       fail-fast: false
       matrix:
         include:
+          # Ubuntu 22.04 for release builds ensures broad glibc compatibility
           - platform: 'ubuntu-22.04'
             args: ''
           - platform: 'windows-latest'
@@ -68,83 +132,60 @@ jobs:
       - name: Install NPM dependencies
         run: npm ci
 
-      - name: Generate Dynamic Changelog
-        id: changelog
-        shell: bash
-        run: |
-          CURRENT_TAG="${{ github.ref_name }}"
-          PREV_TAG=$(git tag --sort=-creatordate | grep -v "^${CURRENT_TAG}$" | head -n 1 || true)
-          echo "Current Tag: $CURRENT_TAG"
-          echo "Previous Tag: $PREV_TAG"
-
-          if [ -n "$PREV_TAG" ]; then
-            RAW_LOG=$(git log "${PREV_TAG}..HEAD" --pretty=format:"%s" --no-merges 2>/dev/null || true)
-          fi
-
-          if [ -z "$RAW_LOG" ]; then
-            RAW_LOG=$(git log -n 15 --pretty=format:"%s" --no-merges 2>/dev/null || true)
-          fi
-
-          # Filter out version bump noise
-          FILTERED_LOG=$(echo "$RAW_LOG" | grep -v -E "^chore\(release\):" | grep -v -E "^chore: update Cargo.lock" || true)
-
-          # Fallback if range only contained bumps
-          if [ -z "$FILTERED_LOG" ]; then
-            FILTERED_LOG=$(git log -n 10 --pretty=format:"%s" --no-merges 2>/dev/null | grep -v -E "^chore\(release\):" || true)
-          fi
-
-          # Parse by conventional commit categories
-          FEAT_LOG=$(echo "$FILTERED_LOG" | grep -E "^feat(\(.*\))?:" | sed "s/^/• /" || true)
-          FIX_LOG=$(echo "$FILTERED_LOG" | grep -E "^fix(\(.*\))?:" | sed "s/^/• /" || true)
-          PERF_LOG=$(echo "$FILTERED_LOG" | grep -E "^(perf|refactor)(\(.*\))?:" | sed "s/^/• /" || true)
-          OTHER_LOG=$(echo "$FILTERED_LOG" | grep -v -E "^(feat|fix|perf|refactor|chore)(\(.*\))?:" | sed "s/^/• /" || true)
-
-          BODY="### What's New in $CURRENT_TAG:"
-
-          if [ -n "$FEAT_LOG" ]; then
-            BODY=$(printf "%s\n\nFeatures & Enhancements:\n%s" "$BODY" "$FEAT_LOG")
-          fi
-
-          if [ -n "$FIX_LOG" ]; then
-            BODY=$(printf "%s\n\nBug Fixes & Stability:\n%s" "$BODY" "$FIX_LOG")
-          fi
-
-          if [ -n "$PERF_LOG" ]; then
-            BODY=$(printf "%s\n\nPerformance & Refactoring:\n%s" "$BODY" "$PERF_LOG")
-          fi
-
-          if [ -n "$OTHER_LOG" ]; then
-            BODY=$(printf "%s\n\nDocumentation & Updates:\n%s" "$BODY" "$OTHER_LOG")
-          fi
-
-          if [ -z "$FEAT_LOG" ] && [ -z "$FIX_LOG" ] && [ -z "$PERF_LOG" ] && [ -z "$OTHER_LOG" ]; then
-            BODY=$(printf "%s\n\n• Maintenance release, stability enhancements, and bug fixes." "$BODY")
-          fi
-
-          echo "RELEASE_BODY<<EOF" >> $GITHUB_ENV
-          echo "$BODY" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-
-      - name: Prepare signing key
-        shell: bash
-        run: |
-          TRIMMED_KEY=$(echo -n "${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}" | tr -d '\r\n[:space:]')
-          echo "TAURI_SIGNING_PRIVATE_KEY=$TRIMMED_KEY" >> $GITHUB_ENV
-          KEY_PATH="${{ runner.temp }}/tauri.key"
-          echo -n "$TRIMMED_KEY" > "$KEY_PATH"
-          echo "TAURI_SIGNING_PRIVATE_KEY_PATH=$KEY_PATH" >> $GITHUB_ENV
-
       - name: Build Tauri Desktop Application & Bundles
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ env.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PATH: ${{ env.TAURI_SIGNING_PRIVATE_KEY_PATH }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'WH3 Mod Manager ${{ github.ref_name }}'
-          releaseBody: ${{ env.RELEASE_BODY }}
+          releaseBody: ''
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
+
+      - name: Generate SHA256 checksums
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          cd src-tauri/target/release/bundle
+          find . -type f \( -name "*.deb" -o -name "*.rpm" -o -name "*.AppImage" -o -name "*.AppImage.tar.gz" \) \
+            -exec sha256sum {} \; | tee checksums-linux.txt
+          echo "Generated checksums:"
+          cat checksums-linux.txt
+
+      - name: Upload checksums to release
+        if: runner.os == 'Linux'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: src-tauri/target/release/bundle/checksums-linux.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate Windows checksums
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $bundlePath = "src-tauri/target/release/bundle"
+          $files = Get-ChildItem -Path $bundlePath -Recurse -Include *.exe,*.msi,*.nsis.zip
+          $checksums = @()
+          foreach ($file in $files) {
+            $hash = (Get-FileHash -Path $file.FullName -Algorithm SHA256).Hash.ToLower()
+            $relativePath = $file.FullName.Replace("$bundlePath\", "").Replace("\", "/")
+            $checksums += "$hash  ./$relativePath"
+          }
+          $checksums | Set-Content -Path "$bundlePath/checksums-windows.txt"
+          Write-Host "Generated checksums:"
+          Get-Content "$bundlePath/checksums-windows.txt"
+
+      - name: Upload Windows checksums to release
+        if: runner.os == 'Windows'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: src-tauri/target/release/bundle/checksums-windows.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
