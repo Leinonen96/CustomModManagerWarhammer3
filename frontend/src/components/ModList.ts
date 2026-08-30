@@ -11,7 +11,6 @@ import { Toast } from './Toast';
 import { tauriInvoke } from '../api/client';
 import { analyzeLoadOrderConflicts } from '../api/conflictApi';
 import { ContextMenu } from './ContextMenu';
-import { CustomSelect, CustomSelectOption } from './CustomSelect';
 
 export class ModListManager {
     private inactiveContainer: HTMLElement;
@@ -20,8 +19,6 @@ export class ModListManager {
     private activeCountBadge: HTMLElement | null = null;
     private sortableInactive: Sortable | null = null;
     private sortableActive: Sortable | null = null;
-    private sortInactiveSelect: CustomSelect | null = null;
-    private sortActiveSelect: CustomSelect | null = null;
     private isInternalDrag: boolean = false;
     private conflictDebounceTimer: any = null;
     private filterRafId: number | null = null;
@@ -223,54 +220,53 @@ export class ModListManager {
     }
 
     private bindSortAndFilterControls(): void {
-        const inactiveOptions: CustomSelectOption[] = [
-            { value: 'date:desc', label: 'Newest Updated' },
-            { value: 'date:asc', label: 'Oldest Updated' },
-            { value: 'title:asc', label: 'Title (A → Z)' },
-            { value: 'title:desc', label: 'Title (Z → A)' },
-            { value: 'filename:asc', label: 'Pack Name (A → Z)' },
-            { value: 'size:desc', label: 'Size (Largest)' },
-            { value: 'size:asc', label: 'Size (Smallest)' },
-            { value: 'source:asc', label: 'Local First' },
-            { value: 'source:desc', label: 'Workshop First' },
-            { value: 'conflicts:desc', label: 'Most Conflicted' }
-        ];
+        // --- Inactive Sort Tabs ---
+        const inactiveTabsContainer = document.getElementById('sort-inactive-tabs');
+        if (inactiveTabsContainer) {
+            inactiveTabsContainer.addEventListener('click', (e) => {
+                const target = (e.target as HTMLElement).closest('.sort-tab') as HTMLElement | null;
+                if (!target) return;
+                const field = (target.dataset.sort || 'date') as any;
+                const currentSort = store.getInactiveSort();
 
-        const activeOptions: CustomSelectOption[] = [
-            { value: 'order:asc', label: 'Load Order (#1 → #N)' },
-            { value: 'order:desc', label: 'Reverse Order (#N → #1)' },
-            { value: 'date:desc', label: 'Newest Updated' },
-            { value: 'date:asc', label: 'Oldest Updated' },
-            { value: 'title:asc', label: 'Title (A → Z)' },
-            { value: 'title:desc', label: 'Title (Z → A)' },
-            { value: 'size:desc', label: 'Size (Largest)' },
-            { value: 'conflicts:desc', label: 'Most Conflicted' }
-        ];
-
-        const inactiveContainer = document.getElementById('sort-inactive-container');
-        if (inactiveContainer) {
-            this.sortInactiveSelect = new CustomSelect(inactiveContainer, 'Newest Updated');
-            this.sortInactiveSelect.setOptions(inactiveOptions, 'date:desc');
-            this.sortInactiveSelect.onChange((val) => {
-                const [field, direction] = val.split(':');
-                if (field && direction) {
-                    store.setInactiveSort(field as any, direction as any);
+                let nextDirection: any;
+                if (currentSort.field === field) {
+                    // Toggle direction
+                    nextDirection = currentSort.direction === 'asc' ? 'desc' : 'asc';
+                } else {
+                    // Default primary direction for each field
+                    nextDirection = (field === 'title') ? 'asc' : 'desc';
                 }
+
+                store.setInactiveSort(field, nextDirection);
+                this.updateSortTabsUi();
             });
         }
 
-        const activeContainer = document.getElementById('sort-active-container');
-        if (activeContainer) {
-            this.sortActiveSelect = new CustomSelect(activeContainer, 'Load Order (#1 → #N)');
-            this.sortActiveSelect.setOptions(activeOptions, 'order:asc');
-            this.sortActiveSelect.onChange((val) => {
-                const [field, direction] = val.split(':');
-                if (field && direction) {
-                    store.setActiveSort(field as any, direction as any);
+        // --- Active Sort Tabs ---
+        const activeTabsContainer = document.getElementById('sort-active-tabs');
+        if (activeTabsContainer) {
+            activeTabsContainer.addEventListener('click', (e) => {
+                const target = (e.target as HTMLElement).closest('.sort-tab') as HTMLElement | null;
+                if (!target) return;
+                const field = (target.dataset.sort || 'order') as any;
+                const currentSort = store.getActiveSort();
+
+                let nextDirection: any;
+                if (currentSort.field === field) {
+                    // Toggle direction
+                    nextDirection = currentSort.direction === 'asc' ? 'desc' : 'asc';
+                } else {
+                    // Default primary direction for each field
+                    nextDirection = (field === 'title' || field === 'order') ? 'asc' : 'desc';
                 }
+
+                store.setActiveSort(field, nextDirection);
+                this.updateSortTabsUi();
             });
         }
 
+        // --- Inactive Filter Pills ---
         const filterInactivePills = document.getElementById('filter-inactive-pills');
         if (filterInactivePills) {
             filterInactivePills.addEventListener('click', (e) => {
@@ -291,6 +287,7 @@ export class ModListManager {
             });
         }
 
+        // --- Active Filter Pills ---
         const filterActivePills = document.getElementById('filter-active-pills');
         if (filterActivePills) {
             filterActivePills.addEventListener('click', (e) => {
@@ -310,6 +307,46 @@ export class ModListManager {
                 store.setActiveFilterType(nextFilter);
             });
         }
+
+        this.updateSortTabsUi();
+    }
+
+    public updateSortTabsUi(): void {
+        // Update Inactive Tabs
+        const inactiveSort = store.getInactiveSort();
+        const inactiveTabs = document.querySelectorAll('#sort-inactive-tabs .sort-tab');
+        inactiveTabs.forEach(btn => {
+            const b = btn as HTMLElement;
+            const field = b.dataset.sort;
+            const isCurrent = field === inactiveSort.field;
+            b.classList.toggle('active', isCurrent);
+            const arrowEl = b.querySelector('.sort-arrow') as HTMLElement | null;
+            if (arrowEl) {
+                if (isCurrent) {
+                    arrowEl.innerText = inactiveSort.direction === 'desc' ? '↓' : '↑';
+                } else {
+                    arrowEl.innerText = '';
+                }
+            }
+        });
+
+        // Update Active Tabs
+        const activeSort = store.getActiveSort();
+        const activeTabs = document.querySelectorAll('#sort-active-tabs .sort-tab');
+        activeTabs.forEach(btn => {
+            const b = btn as HTMLElement;
+            const field = b.dataset.sort;
+            const isCurrent = field === activeSort.field;
+            b.classList.toggle('active', isCurrent);
+            const arrowEl = b.querySelector('.sort-arrow') as HTMLElement | null;
+            if (arrowEl) {
+                if (isCurrent) {
+                    arrowEl.innerText = activeSort.direction === 'desc' ? '↓' : '↑';
+                } else {
+                    arrowEl.innerText = '';
+                }
+            }
+        });
     }
 
     private bindStoreEvents(): void {
@@ -586,10 +623,10 @@ export class ModListManager {
 
         store.setActiveMods(newActiveMods, { silent: true });
 
-        // If manual drag occurred while in a visual sort view, reset active sort selector to Load Order mode
-        if (this.sortActiveSelect && store.getActiveSort().field !== 'order') {
-            this.sortActiveSelect.setValue('order:asc', false);
+        // If manual drag occurred while in a visual sort view, reset active sort tab to Load Order mode
+        if (store.getActiveSort().field !== 'order') {
             store.setActiveSort('order', 'asc');
+            this.updateSortTabsUi();
         }
 
         this.updateOrderNumbers();

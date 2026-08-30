@@ -67,21 +67,34 @@
                         <span id="count-inactive" class="count-badge">0</span>
                     </div>
                     <div class="panel-toolbar">
-                        <div class="sort-control">
-                            <span class="sort-label">Sort:</span>
-                            <div id="sort-inactive-container" class="custom-select-container"></div>
+                        <div class="toolbar-group">
+                            <span class="toolbar-label">Sort:</span>
+                            <div class="sort-tabs" id="sort-inactive-tabs">
+                                <button type="button" class="sort-tab active" data-sort="date" title="Sort by Date (Click to reverse)">
+                                    Date <span class="sort-arrow">↓</span>
+                                </button>
+                                <button type="button" class="sort-tab" data-sort="title" title="Sort by Name (Click to reverse)">
+                                    Name <span class="sort-arrow"></span>
+                                </button>
+                                <button type="button" class="sort-tab" data-sort="size" title="Sort by Size (Click to reverse)">
+                                    Size <span class="sort-arrow"></span>
+                                </button>
+                                <button type="button" class="sort-tab" data-sort="conflicts" title="Sort by Conflicts (Click to reverse)">
+                                    Conflicts <span class="sort-arrow"></span>
+                                </button>
+                            </div>
                         </div>
-                        <div class="filter-pills" id="filter-inactive-pills">
-                            <button type="button" class="filter-pill active" data-filter="all">All</button>
-                            <button type="button" class="filter-pill" data-filter="workshop">
-                                <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg> Workshop
-                            </button>
-                            <button type="button" class="filter-pill" data-filter="local">
-                                <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg> Local
-                            </button>
-                            <button type="button" class="filter-pill" data-filter="conflicted">
-                                <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> Conflicts
-                            </button>
+                        <div class="toolbar-group">
+                            <span class="toolbar-label">Filter:</span>
+                            <div class="filter-pills" id="filter-inactive-pills">
+                                <button type="button" class="filter-pill active" data-filter="all">All</button>
+                                <button type="button" class="filter-pill" data-filter="workshop">
+                                    <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg> Workshop
+                                </button>
+                                <button type="button" class="filter-pill" data-filter="local">
+                                    <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg> Local
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <input type="text" id="search-inactive" class="search-bar" placeholder="Search available mods (name, title, ID)...">
@@ -102,24 +115,37 @@
                         <span id="count-active" class="count-badge count-badge-active">0</span>
                     </div>
                     <div class="panel-toolbar">
-                        <div class="sort-control">
-                            <span class="sort-label">Sort View:</span>
-                            <div id="sort-active-container" class="custom-select-container"></div>
+                        <div class="toolbar-group">
+                            <span class="toolbar-label">Sort View:</span>
+                            <div class="sort-tabs" id="sort-active-tabs">
+                                <button type="button" class="sort-tab active" data-sort="order" title="Sort by Load Order (Click to reverse)">
+                                    Order <span class="sort-arrow">↓</span>
+                                </button>
+                                <button type="button" class="sort-tab" data-sort="date" title="Sort by Date (Click to reverse)">
+                                    Date <span class="sort-arrow"></span>
+                                </button>
+                                <button type="button" class="sort-tab" data-sort="title" title="Sort by Name (Click to reverse)">
+                                    Name <span class="sort-arrow"></span>
+                                </button>
+                                <button type="button" class="sort-tab" data-sort="size" title="Sort by Size (Click to reverse)">
+                                    Size <span class="sort-arrow"></span>
+                                </button>
+                                <button type="button" class="sort-tab" data-sort="conflicts" title="Sort by Conflicts (Click to reverse)">
+                                    Conflicts <span class="sort-arrow"></span>
+                                </button>
+                            </div>
                         </div>
-                        <div class="filter-pills" id="filter-active-pills">
-                            <button type="button" class="filter-pill active" data-filter="all">All</button>
-                            <button type="button" class="filter-pill" data-filter="pinned">
-                                <svg class="pill-icon" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22" stroke-width="2.5"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.89A2 2 0 0 1 15 10.77V5a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v5.77a2 2 0 0 1-1.11 1.79l-1.78.89A2 2 0 0 0 5 15.24Z"></path></svg> Pinned
-                            </button>
-                            <button type="button" class="filter-pill" data-filter="workshop">
-                                <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg> Workshop
-                            </button>
-                            <button type="button" class="filter-pill" data-filter="local">
-                                <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg> Local
-                            </button>
-                            <button type="button" class="filter-pill" data-filter="conflicted">
-                                <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> Conflicts
-                            </button>
+                        <div class="toolbar-group">
+                            <span class="toolbar-label">Filter:</span>
+                            <div class="filter-pills" id="filter-active-pills">
+                                <button type="button" class="filter-pill active" data-filter="all">All</button>
+                                <button type="button" class="filter-pill" data-filter="workshop">
+                                    <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg> Workshop
+                                </button>
+                                <button type="button" class="filter-pill" data-filter="local">
+                                    <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg> Local
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <input type="text" id="search-active" class="search-bar" placeholder="Search active mods...">

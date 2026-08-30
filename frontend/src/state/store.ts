@@ -461,8 +461,6 @@ class AppStore {
             list = list.filter(m => (m.source_type || 'Workshop').toLowerCase() === 'workshop' && m.id !== 'Local');
         } else if (this.inactiveFilterType === 'local') {
             list = list.filter(m => (m.source_type || '').toLowerCase() === 'local' || m.id === 'Local');
-        } else if (this.inactiveFilterType === 'conflicted') {
-            list = list.filter(m => this.getModConflictScore(m) > 0);
         }
 
         // Sort
@@ -481,10 +479,6 @@ class AppStore {
             items = items.filter(item => (item.mod.source_type || 'Workshop').toLowerCase() === 'workshop' && item.mod.id !== 'Local');
         } else if (this.activeFilterType === 'local') {
             items = items.filter(item => (item.mod.source_type || '').toLowerCase() === 'local' || item.mod.id === 'Local');
-        } else if (this.activeFilterType === 'conflicted') {
-            items = items.filter(item => this.getModConflictScore(item.mod) > 0);
-        } else if (this.activeFilterType === 'pinned') {
-            items = items.filter(item => this.isModPinned(item.mod.name || item.mod.id));
         }
 
         // Sort

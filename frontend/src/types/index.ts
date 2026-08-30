@@ -32,7 +32,7 @@ export type SortField =
 
 export type SortDirection = 'asc' | 'desc';
 
-export type FilterType = 'all' | 'workshop' | 'local' | 'conflicted' | 'pinned';
+export type FilterType = 'all' | 'workshop' | 'local';
 
 export interface SortFilterState {
     inactiveSortField: SortField;
