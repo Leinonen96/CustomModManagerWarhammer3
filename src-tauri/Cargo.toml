@@ -1,6 +1,6 @@
 [package]
 name = "wh3-mod-manager"
-version = "2.2.4"
+version = "2.3.0"
 description = "Total War: WARHAMMER III Native Mod Manager"
 authors = ["Tuomas Leinonen"]
 edition = "2021"
