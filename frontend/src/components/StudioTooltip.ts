@@ -39,14 +39,15 @@ export class StudioTooltip {
         document.addEventListener('mouseover', (e) => this.handleMouseOver(e), { passive: true });
         document.addEventListener('mouseout', (e) => this.handleMouseOut(e), { passive: true });
         document.addEventListener('mousedown', () => this.hide(), { passive: true });
-        window.addEventListener('scroll', () => this.hide(), { passive: true });
+        // Scroll events don't bubble — use capture phase to intercept scrolls from .mod-list containers
+        document.addEventListener('scroll', () => this.hide(), { passive: true, capture: true });
     }
 
     private handleMouseOver(e: MouseEvent): void {
         const target = (e.target as HTMLElement)?.closest('[title], [data-tooltip], [data-studio-tooltip]') as HTMLElement;
         if (!target) return;
 
-        // Extract and suppress native OS tooltip
+        // Migrate native title to data attribute once, then read passively on subsequent hovers
         if (target.hasAttribute('title')) {
             const rawTitle = target.getAttribute('title') || '';
             if (rawTitle.trim()) {

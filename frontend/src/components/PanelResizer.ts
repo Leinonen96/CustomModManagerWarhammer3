@@ -56,6 +56,8 @@ export class PanelResizer {
     }
 
     private bindEvents(): void {
+        let moveRafId: number | null = null;
+
         this.resizerEl.addEventListener('pointerdown', (e: PointerEvent) => {
             e.preventDefault();
             this.isDragging = true;
@@ -67,18 +69,28 @@ export class PanelResizer {
         this.resizerEl.addEventListener('pointermove', (e: PointerEvent) => {
             if (!this.isDragging) return;
 
-            const rect = this.container.getBoundingClientRect();
-            if (rect.width <= 0) return;
+            const clientX = e.clientX;
+            if (moveRafId !== null) return;
 
-            const rawRatio = (e.clientX - rect.left) / rect.width;
-            const clampedRatio = Math.max(MIN_RATIO, Math.min(MAX_RATIO, rawRatio));
+            moveRafId = requestAnimationFrame(() => {
+                moveRafId = null;
+                const rect = this.container.getBoundingClientRect();
+                if (rect.width <= 0) return;
 
-            this.applyRatio(clampedRatio);
+                const rawRatio = (clientX - rect.left) / rect.width;
+                const clampedRatio = Math.max(MIN_RATIO, Math.min(MAX_RATIO, rawRatio));
+
+                this.applyRatio(clampedRatio);
+            });
         });
 
         const stopDragging = (e: PointerEvent) => {
             if (!this.isDragging) return;
             this.isDragging = false;
+            if (moveRafId !== null) {
+                cancelAnimationFrame(moveRafId);
+                moveRafId = null;
+            }
             try {
                 this.resizerEl.releasePointerCapture(e.pointerId);
             } catch {

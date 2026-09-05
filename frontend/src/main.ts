@@ -51,10 +51,8 @@ class App {
             const config = await fetchConfig();
             store.setConfig(config);
 
-            // Apply persisted zoom scale
-            if (config.ui_scale) {
-                this.zoomController.setScale(config.ui_scale, false);
-            }
+            // Apply persisted zoom scale (default: 120%)
+            this.zoomController.setScale(config.ui_scale || 1.20, false);
 
             const isConfigured = Boolean(
                 (config.workshop_dir || config.WORKSHOP_DIR) &&
