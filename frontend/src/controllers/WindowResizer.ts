@@ -42,14 +42,18 @@ export class WindowResizer {
             });
         });
 
-        // Hide handles when maximized
-        this.appWindow.onResized(async () => {
-            const isMaximized = await this.appWindow.isMaximized();
-            if (isMaximized) {
-                this.container.style.display = 'none';
-            } else {
-                this.container.style.display = 'block';
-            }
+        // Hide handles when maximized - debounced to avoid IPC flood during edge dragging
+        let resizeDebounce: any = null;
+        this.appWindow.onResized(() => {
+            clearTimeout(resizeDebounce);
+            resizeDebounce = setTimeout(async () => {
+                try {
+                    const isMaximized = await this.appWindow.isMaximized();
+                    this.container.style.display = isMaximized ? 'none' : 'block';
+                } catch {
+                    // Ignore transient IPC errors on minimize/close
+                }
+            }, 100);
         });
     }
 }

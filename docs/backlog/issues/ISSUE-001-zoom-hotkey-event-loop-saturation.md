@@ -58,64 +58,41 @@ The browser is forced to process all 80 tasks sequentially, executing 80 individ
 
 ## 3. Proposed Architecture & Solution
 
-### 1. RequestAnimationFrame-Batched Scale Accumulator
+### 1. Dual-Tier Protection: Rate Limiter & Queue Cap
+To prevent malicious or accidental user/macro spam from saturating the system:
+1. **Hard Rate Limit (`MAX_REQUESTS_PER_SECOND = 20`)**:
+   - Imposes a minimum 50 ms interval between applied zoom layout reflows.
+   - Caps DOM mutations to at most 20 updates per second, keeping main-thread utilization well below 30%.
+2. **Hard Queue Cap (`MAX_QUEUED_REQUESTS = 3`)**:
+   - Caps the pending request backlog to a maximum depth of 3 adjustments.
+   - Any incoming keydown or wheel events arriving while the queue is full are **immediately dropped**.
+   - **Mathematical Guarantee**: The maximum possible trailing lag after releasing the hotkeys is strictly bounded to $3 \times 50\text{ ms} = \mathbf{150\text{ ms}}$, making prolonged freezes mathematically impossible.
+
+### 2. RequestAnimationFrame-Batched Scale Accumulator
 Decouple input event capture from DOM style mutations using an animation frame accumulator:
-- Multiple `keydown` or `wheel` events within the same 16 ms render window will only increment a `pendingScale` target.
-- A single `requestAnimationFrame` callback reads the accumulated target, clamps it, and applies it to `workspace.style.zoom` at most once per display frame.
+- Multiple `keydown` or `wheel` events within the same frame window increment a pending target without touching the DOM.
+- A single `requestAnimationFrame` callback reads the accumulated target and applies it to `workspace.style.zoom`.
 
-### 2. Elimination of Redundant Root CSS Variable Invalidation
-Remove `document.documentElement.style.setProperty('--ui-scale', ...)` from the hot path. If `--ui-scale` is needed in the future, apply it only after user interaction rests.
+### 3. Window & Panel Resize IPC Throttling
+1. **Window Resize ([WindowResizer.ts](file:///mnt/GG/VSCodeProjects/CustomModManagerWarhammer3/frontend/src/controllers/WindowResizer.ts))**:
+   - Debounce `isMaximized` IPC checks by 100 ms during active edge dragging, preventing 60+ IPC calls per second during window resize.
+2. **Panel Resize ([PanelResizer.ts](file:///mnt/GG/VSCodeProjects/CustomModManagerWarhammer3/frontend/src/components/PanelResizer.ts))**:
+   - Batch splitter divider ratio calculations via `requestAnimationFrame` on pointermove.
 
-### 3. Lightweight DOM Updates on the Indicator
+### 4. Elimination of Redundant Root CSS Variable Invalidation
+Remove `document.documentElement.style.setProperty('--ui-scale', ...)` from the hot path.
+
+### 5. Lightweight DOM Updates on the Indicator
 Replace `.innerHTML` SVG string re-parsing with persistent DOM nodes and update `.textContent` for the percentage value.
-
-```typescript
-// Proposed implementation in ZoomController.ts
-export class ZoomController {
-    private currentScale: number = 1.0;
-    private targetScale: number = 1.0;
-    private rafId: number | null = null;
-    private saveDebounceTimeout: any = null;
-    private indicatorValueEl!: HTMLElement;
-
-    private applyScaleBatched(newScale: number, persist = true): void {
-        this.targetScale = Math.round(Math.min(Math.max(newScale, 0.70), 1.60) * 100) / 100;
-
-        if (this.rafId !== null) return;
-
-        this.rafId = requestAnimationFrame(() => {
-            this.rafId = null;
-            if (this.currentScale === this.targetScale) return;
-            this.currentScale = this.targetScale;
-
-            const workspace = document.getElementById('app-workspace');
-            if (workspace) {
-                workspace.style.zoom = `${this.currentScale}`;
-            }
-
-            this.updateIndicator(this.currentScale);
-
-            if (persist) {
-                clearTimeout(this.saveDebounceTimeout);
-                this.saveDebounceTimeout = setTimeout(() => {
-                    const config = store.getConfig();
-                    if (config) {
-                        config.ui_scale = this.currentScale;
-                        saveConfig(config).catch(() => {});
-                    }
-                }, 500);
-            }
-        });
-    }
-}
-```
 
 ---
 
 ## 4. Acceptance Criteria
 
-- [ ] Spamming <kbd>Ctrl</kbd> + <kbd>+</kbd> or <kbd>Ctrl</kbd> + <kbd>-</kbd> 50 times in rapid succession stops scaling immediately when key is released (0 ms trailing delay).
-- [ ] Holding <kbd>Ctrl</kbd> + <kbd>+</kbd> smoothly scales the UI at 60 FPS without frame drops or UI freezing.
+- [ ] Rate limiter enforces a hard cap of at most 20 zoom updates per second (minimum 50 ms spacing).
+- [ ] Queue cap drops excess spam requests when more than 3 requests are pending; trailing lag never exceeds 150 ms.
+- [ ] Spamming <kbd>Ctrl</kbd> + <kbd>+</kbd> or <kbd>Ctrl</kbd> + <kbd>-</kbd> 50 times in rapid succession stops scaling immediately when key is released.
+- [ ] Holding <kbd>Ctrl</kbd> + <kbd>+</kbd> smoothly scales the UI without frame drops or UI freezing.
 - [ ] High-frequency mousewheel zooming (<kbd>Ctrl</kbd> + Wheel) responds smoothly without task queue saturation.
+- [ ] Window resize dragging no longer spams unthrottled `isMaximized` IPC calls.
 - [ ] Persisted scale is debounced and saved to `config.json` once zooming rests.
-- [ ] No regression in fixed Titlebar positioning or modal overlay alignment.
