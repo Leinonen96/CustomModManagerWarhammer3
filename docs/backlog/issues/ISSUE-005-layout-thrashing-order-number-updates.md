@@ -4,7 +4,7 @@
 | :--- | :--- |
 | **Issue ID** | `ISSUE-005` |
 | **Title** | Forced Synchronous Layout Thrashing in Order Synchronization |
-| **Status** | Open |
+| **Status** | Closed (Resolved in `2ed9816`) |
 | **Priority** | P2 - Medium |
 | **Severity** | S3 (Moderate) |
 | **Component** | Frontend / `ModList` / DOM Sync |

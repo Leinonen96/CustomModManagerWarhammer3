@@ -4,7 +4,7 @@
 | :--- | :--- |
 | **Issue ID** | `ISSUE-006A` |
 | **Title** | Fast Pre-Normalized Sort Comparator |
-| **Status** | Open |
+| **Status** | Closed (Resolved in `2ed9816`) |
 | **Priority** | P2 - Medium (Phase 2) |
 | **Severity** | S3 (Moderate) |
 | **Component** | Frontend / `AppStore` / Sorting Engine |

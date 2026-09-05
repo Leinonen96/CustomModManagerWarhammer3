@@ -4,7 +4,7 @@
 | :--- | :--- |
 | **Issue ID** | `ISSUE-006B` |
 | **Title** | Keyed In-Place DOM Reconciliation |
-| **Status** | Open |
+| **Status** | Closed (Resolved in `2ed9816`) |
 | **Priority** | P2 - Medium (Phase 3) |
 | **Severity** | S3 (Moderate) |
 | **Component** | Frontend / `ModListManager` / DOM Reconciliation |

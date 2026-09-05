@@ -4,7 +4,7 @@
 | :--- | :--- |
 | **Issue ID** | `ISSUE-001` |
 | **Title** | Zoom Hotkey Event Loop Saturation & 10-Second Freeze |
-| **Status** | Open |
+| **Status** | Closed (Resolved in `07d70f3` & `897482d`) |
 | **Priority** | P0 - Critical |
 | **Severity** | S1 (Blocker) |
 | **Component** | Frontend / `ZoomController` / Scaling Engine |

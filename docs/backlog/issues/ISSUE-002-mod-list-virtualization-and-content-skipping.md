@@ -4,7 +4,7 @@
 | :--- | :--- |
 | **Issue ID** | `ISSUE-002` |
 | **Title** | Mod List 120 FPS Scroll Engine (CSS Virtualization & Hover Paint Suppression) |
-| **Status** | Open |
+| **Status** | Superseded by [ISSUE-008](file:///mnt/GG/VSCodeProjects/CustomModManagerWarhammer3/docs/backlog/issues/ISSUE-008-true-dom-virtualization.md) (Hover paint resolved in `2ed9816`) |
 | **Priority** | P1 - High (Phase 1) |
 | **Severity** | S2 (Major) |
 | **Component** | Frontend / `ModListManager` / CSS Rendering Engine |

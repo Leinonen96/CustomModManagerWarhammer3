@@ -4,7 +4,7 @@
 | :--- | :--- |
 | **Issue ID** | `ISSUE-007` |
 | **Title** | Excessive DOM Node Density & Inline SVG Vector Duplication |
-| **Status** | Open |
+| **Status** | Closed (Wontfix - WebKitGTK shadow root overhead) |
 | **Priority** | P3 - Low |
 | **Severity** | S4 (Minor) |
 | **Component** | Frontend / `ModCard` Architecture / Graphics Assets |

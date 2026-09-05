@@ -4,7 +4,7 @@
 | :--- | :--- |
 | **Issue ID** | `ISSUE-004` |
 | **Title** | StudioTooltip Mid-Scroll DOM Mutation & Capture Invalidation |
-| **Status** | Open |
+| **Status** | Closed (Resolved in `2ed9816`) |
 | **Priority** | P2 - Medium |
 | **Severity** | S3 (Moderate) |
 | **Component** | Frontend / `StudioTooltip` Engine |
