@@ -409,8 +409,9 @@ export class ModListManager {
 
     /**
      * High-performance Keyed DOM Reconciliation with Sorting and Filtering.
-     * Reuses existing card DOM elements from `cardCache` instead of wiping innerHTML,
-     * maintaining hardware image decodes and eliminating layout reflows.
+     * Reuses existing card DOM elements from `cardCache` instead of wiping innerHTML.
+     * Fast-path: when item keys are identical to current DOM children, updates cards
+     * in-place without any DOM detach/reattach, preserving layout caches and image decodes.
      */
     public render(): void {
         const inactiveMods = store.getFilteredAndSortedInactiveMods();
@@ -418,38 +419,75 @@ export class ModListManager {
         const totalActive = store.getActiveMods().length;
 
         // 1. Reconcile Inactive Container
-        const inactiveFrag = document.createDocumentFragment();
-        inactiveMods.forEach(mod => {
-            const key = getModIdentifier(mod);
-            let card = this.cardCache.get(key);
-            if (!card) {
-                card = createModCard(mod, null, totalActive);
-                this.cardCache.set(key, card);
-            } else {
-                updateModCardState(card, null, totalActive);
-            }
-            inactiveFrag.appendChild(card);
-        });
-        this.inactiveContainer.replaceChildren(inactiveFrag);
+        this.reconcileContainer(
+            this.inactiveContainer,
+            inactiveMods.map(mod => ({ mod, order: null })),
+            totalActive
+        );
 
         // 2. Reconcile Active Container
-        const activeFrag = document.createDocumentFragment();
-        activeItems.forEach(({ mod, originalOrder }) => {
-            const key = getModIdentifier(mod);
-            let card = this.cardCache.get(key);
-            if (!card) {
-                card = createModCard(mod, originalOrder, totalActive);
-                this.cardCache.set(key, card);
-            } else {
-                updateModCardState(card, originalOrder, totalActive);
-            }
-            activeFrag.appendChild(card);
-        });
-        this.activeContainer.replaceChildren(activeFrag);
+        this.reconcileContainer(
+            this.activeContainer,
+            activeItems.map(({ mod, originalOrder }) => ({ mod, order: originalOrder })),
+            totalActive
+        );
 
         this.updateCounts(inactiveMods.length, activeItems.length);
         this.applyFilters();
         this.updateConflictBadges();
+    }
+
+    /**
+     * Keyed delta-aware container reconciliation.
+     * Compares target key sequence against current DOM children:
+     * - Fast path (same keys, same order): update card state in-place, zero DOM moves.
+     * - Slow path (structural change): build fragment and replaceChildren.
+     */
+    private reconcileContainer(
+        container: HTMLElement,
+        items: { mod: Mod; order: number | null }[],
+        totalActive: number
+    ): void {
+        const currentChildren = container.children;
+        const targetKeys = items.map(({ mod }) => getModIdentifier(mod));
+
+        // Fast path: check if key sequence is identical to current DOM
+        let isIdentical = currentChildren.length === targetKeys.length;
+        if (isIdentical) {
+            for (let i = 0; i < targetKeys.length; i++) {
+                const el = currentChildren[i] as HTMLElement;
+                const currentKey = el.dataset.name || el.dataset.id || '';
+                if (currentKey !== targetKeys[i]) {
+                    isIdentical = false;
+                    break;
+                }
+            }
+        }
+
+        if (isIdentical) {
+            // In-place update: no DOM detach/reattach needed
+            for (let i = 0; i < items.length; i++) {
+                const { mod, order } = items[i];
+                const cardEl = currentChildren[i] as HTMLElement;
+                updateModCardState(cardEl, order, totalActive);
+            }
+            return;
+        }
+
+        // Structural change: use fragment-based replacement
+        const frag = document.createDocumentFragment();
+        for (const { mod, order } of items) {
+            const key = getModIdentifier(mod);
+            let card = this.cardCache.get(key);
+            if (!card) {
+                card = createModCard(mod, order, totalActive);
+                this.cardCache.set(key, card);
+            } else {
+                updateModCardState(card, order, totalActive);
+            }
+            frag.appendChild(card);
+        }
+        container.replaceChildren(frag);
     }
 
     private updateInspectedHighlight(): void {
@@ -641,8 +679,12 @@ export class ModListManager {
             const numEl = el.querySelector('.order-num') as HTMLElement | null;
             if (numEl && !numEl.querySelector('input')) {
                 const targetText = (i + 1).toString();
-                if (numEl.innerText !== targetText) numEl.innerText = targetText;
-                numEl.classList.add('order-active', 'order-editable');
+                if (numEl.textContent !== targetText) {
+                    numEl.textContent = targetText;
+                }
+                if (!numEl.classList.contains('order-active')) {
+                    numEl.classList.add('order-active', 'order-editable');
+                }
             }
             const bottomBtn = el.querySelector('[data-action="bottom"]') as HTMLElement | null;
             if (bottomBtn) {
@@ -654,8 +696,8 @@ export class ModListManager {
         for (let i = 0; i < inactiveChildren.length; i++) {
             const el = inactiveChildren[i] as HTMLElement;
             const numEl = el.querySelector('.order-num') as HTMLElement | null;
-            if (numEl && numEl.innerText !== '-') {
-                numEl.innerText = '-';
+            if (numEl && numEl.textContent !== '-') {
+                numEl.textContent = '-';
                 numEl.classList.remove('order-active', 'order-editable');
             }
             // Ensure any item moved to inactive list gets inactive buttons
@@ -671,10 +713,10 @@ export class ModListManager {
 
     private updateCounts(inactiveCount: number, activeCount: number): void {
         if (this.inactiveCountBadge) {
-            this.inactiveCountBadge.innerText = Math.max(0, inactiveCount).toString();
+            this.inactiveCountBadge.textContent = Math.max(0, inactiveCount).toString();
         }
         if (this.activeCountBadge) {
-            this.activeCountBadge.innerText = activeCount.toString();
+            this.activeCountBadge.textContent = activeCount.toString();
         }
     }
 

@@ -51,6 +51,20 @@ class AppStore {
 
     private listeners: Map<StoreEvent, Set<Listener>> = new Map();
 
+    /**
+     * Pre-compute lowercase sort keys on Mod objects to eliminate
+     * per-comparison .toLowerCase() allocations during sort.
+     */
+    private normalizeMods(mods: Mod[]): Mod[] {
+        for (const m of mods) {
+            if (m._normTitle === undefined) {
+                m._normTitle = (m.title || m.name || '').toLowerCase();
+                m._normName = (m.name || '').toLowerCase();
+            }
+        }
+        return mods;
+    }
+
     constructor() {
         // Initialize listener buckets
         const events: StoreEvent[] = [
@@ -87,7 +101,7 @@ class AppStore {
     }
 
     public setAllMods(mods: Mod[]): void {
-        this.allMods = mods;
+        this.allMods = this.normalizeMods(mods);
         this.emit('MODS_CHANGED');
     }
 
@@ -115,7 +129,7 @@ class AppStore {
         const changed = added > 0 || removed > 0;
 
         if (changed || this.allMods.length !== newMods.length) {
-            this.allMods = newMods;
+            this.allMods = this.normalizeMods(newMods);
 
             // Reconcile active mods: preserve exact order and pinned state, but prune mods that no longer exist on disk
             const updatedActive = this.activeMods
@@ -139,7 +153,7 @@ class AppStore {
     }
 
     public setActiveMods(mods: Mod[], options: { silent?: boolean } = {}): void {
-        this.activeMods = mods;
+        this.activeMods = this.normalizeMods(mods);
         if (!options.silent) {
             this.emit('ACTIVE_MODS_CHANGED');
         }
@@ -393,50 +407,44 @@ class AppStore {
         let diff = 0;
         switch (field) {
             case 'date': {
-                const timeA = a.last_modified || 0;
-                const timeB = b.last_modified || 0;
-                diff = timeA - timeB;
+                diff = (a.last_modified || 0) - (b.last_modified || 0);
                 break;
             }
             case 'title': {
-                const titleA = (a.title || a.name || '').toLowerCase();
-                const titleB = (b.title || b.name || '').toLowerCase();
-                diff = titleA.localeCompare(titleB);
+                const tA = a._normTitle || '';
+                const tB = b._normTitle || '';
+                diff = tA < tB ? -1 : (tA > tB ? 1 : 0);
                 break;
             }
             case 'filename': {
-                const nameA = (a.name || '').toLowerCase();
-                const nameB = (b.name || '').toLowerCase();
-                diff = nameA.localeCompare(nameB);
+                const nA = a._normName || '';
+                const nB = b._normName || '';
+                diff = nA < nB ? -1 : (nA > nB ? 1 : 0);
                 break;
             }
             case 'size': {
-                const sizeA = a.file_size_bytes || 0;
-                const sizeB = b.file_size_bytes || 0;
-                diff = sizeA - sizeB;
+                diff = (a.file_size_bytes || 0) - (b.file_size_bytes || 0);
                 break;
             }
             case 'source': {
                 const srcA = (a.source_type || 'Workshop').toLowerCase();
                 const srcB = (b.source_type || 'Workshop').toLowerCase();
-                diff = srcA.localeCompare(srcB);
+                diff = srcA < srcB ? -1 : (srcA > srcB ? 1 : 0);
                 break;
             }
             case 'conflicts': {
-                const confA = this.getModConflictScore(a);
-                const confB = this.getModConflictScore(b);
-                diff = confA - confB;
+                diff = this.getModConflictScore(a) - this.getModConflictScore(b);
                 break;
             }
             default:
                 diff = 0;
         }
 
-        // Secondary tiebreaker by title
+        // Secondary tiebreaker by pre-normalized title
         if (diff === 0 && field !== 'title') {
-            const titleA = (a.title || a.name || '').toLowerCase();
-            const titleB = (b.title || b.name || '').toLowerCase();
-            diff = titleA.localeCompare(titleB);
+            const tA = a._normTitle || '';
+            const tB = b._normTitle || '';
+            diff = tA < tB ? -1 : (tA > tB ? 1 : 0);
         }
 
         return direction === 'asc' ? diff : -diff;

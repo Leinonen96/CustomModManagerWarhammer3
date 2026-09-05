@@ -19,6 +19,11 @@ export interface Mod {
     source_type?: 'Workshop' | 'Local' | string;
     last_modified_str?: string;
     author?: string;
+
+    /** Pre-computed lowercase title for zero-allocation sort comparisons */
+    _normTitle?: string;
+    /** Pre-computed lowercase name for zero-allocation sort comparisons */
+    _normName?: string;
 }
 
 export type SortField = 
