@@ -39,3 +39,11 @@ This document tracks completed milestones and planned features for the Total War
 - [ ] Schema table row count comparison for conflicting DB tables.
 - [ ] Pack health audit tool (detect empty packs, invalid compression flags, missing localization strings).
 - [ ] Batch preset comparison diff tool.
+- [ ] Performance & DOM Optimization Backlog ([docs/backlog/README.md](file:///mnt/GG/VSCodeProjects/CustomModManagerWarhammer3/docs/backlog/README.md)):
+  - [ISSUE-001: Zoom Hotkey Event Loop Saturation & 10-Second Freeze](file:///mnt/GG/VSCodeProjects/CustomModManagerWarhammer3/docs/backlog/issues/ISSUE-001-zoom-hotkey-event-loop-saturation.md)
+  - [ISSUE-002: Mod List 120 FPS Scroll Engine (CSS Virtualization & Hover Paint Suppression)](file:///mnt/GG/VSCodeProjects/CustomModManagerWarhammer3/docs/backlog/issues/ISSUE-002-mod-list-virtualization-and-content-skipping.md)
+  - [ISSUE-004: StudioTooltip Mid-Scroll DOM Mutation & Capture Invalidation](file:///mnt/GG/VSCodeProjects/CustomModManagerWarhammer3/docs/backlog/issues/ISSUE-004-studio-tooltip-mid-scroll-dom-mutation.md)
+  - [ISSUE-005: Forced Synchronous Layout Thrashing in Order Synchronization](file:///mnt/GG/VSCodeProjects/CustomModManagerWarhammer3/docs/backlog/issues/ISSUE-005-layout-thrashing-order-number-updates.md)
+  - [ISSUE-006A: Fast Pre-Normalized Sort Comparator](file:///mnt/GG/VSCodeProjects/CustomModManagerWarhammer3/docs/backlog/issues/ISSUE-006A-fast-prenormalized-sort-comparator.md)
+  - [ISSUE-006B: Keyed In-Place DOM Reconciliation](file:///mnt/GG/VSCodeProjects/CustomModManagerWarhammer3/docs/backlog/issues/ISSUE-006B-keyed-inplace-dom-reconciliation.md)
+  - [ISSUE-007: Excessive DOM Node Density & Inline SVG Vector Duplication](file:///mnt/GG/VSCodeProjects/CustomModManagerWarhammer3/docs/backlog/issues/ISSUE-007-dom-node-density-inline-svg-overhead.md)
