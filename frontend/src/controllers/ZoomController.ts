@@ -7,17 +7,18 @@ import { store } from '../state/store';
 import { saveConfig } from '../api/configApi';
 
 export class ZoomController {
-    private static readonly MIN_SCALE = 0.70;
+    private static readonly MIN_SCALE = 0.80;
     private static readonly MAX_SCALE = 1.60;
-    private static readonly STEP_DELTA = 0.05;
+    private static readonly STEP_DELTA = 0.10;
+    private static readonly DEFAULT_SCALE = 1.20;
 
     // Rate Limiting & Queue Capping Constants
     private static readonly MAX_REQUESTS_PER_SECOND = 20; // Hard cap: max 20 updates / second
     private static readonly MIN_REQUEST_INTERVAL_MS = 1000 / ZoomController.MAX_REQUESTS_PER_SECOND; // 50ms min spacing
     private static readonly MAX_QUEUED_REQUESTS = 3; // Hard cap: max 3 pending requests in queue
 
-    private currentScale: number = 1.0;
-    private targetScale: number = 1.0;
+    private currentScale: number = ZoomController.DEFAULT_SCALE;
+    private targetScale: number = ZoomController.DEFAULT_SCALE;
     private pendingQueue: number[] = [];
     private lastAppliedTime: number = 0;
     private dispatchTimeout: any = null;
@@ -191,7 +192,7 @@ export class ZoomController {
                 this.adjustScale(-ZoomController.STEP_DELTA);
             } else if (isReset) {
                 e.preventDefault();
-                this.setScale(1.0);
+                this.setScale(ZoomController.DEFAULT_SCALE);
             }
         });
 
@@ -199,7 +200,7 @@ export class ZoomController {
         window.addEventListener('wheel', (e: WheelEvent) => {
             if (e.ctrlKey || e.metaKey) {
                 e.preventDefault();
-                const delta = e.deltaY < 0 ? 0.04 : -0.04;
+                const delta = e.deltaY < 0 ? ZoomController.STEP_DELTA : -ZoomController.STEP_DELTA;
                 this.adjustScale(delta);
             }
         }, { passive: false });
